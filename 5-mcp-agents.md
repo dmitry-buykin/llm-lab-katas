@@ -1,7 +1,3 @@
-Perfect, I’ll explore how to use OpenAI’s Agents SDK as a local MCP host (client) to call custom MCP servers, as well as how to expose OpenAI-powered tools via MCP for other agents. I’ll focus on FastAPI and Azure OpenAI setup for local testing, and I’ll include official documentation and community examples where available. I’ll also clarify how OpenAI Agents, MCP, and A2A compare and complement each other.
-
-I’ll let you know as soon as the updated guide is ready.
-
 # 🔌 LLM Lab: OpenAI Agents + MCP Integration (Local Dev)
 
 ## Introduction
