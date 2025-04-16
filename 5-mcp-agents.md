@@ -21,7 +21,7 @@ OpenAI’s Agents SDK allows you to create an AI *agent* (backed by an LLM like 
 
 **How it works:** The OpenAI Agents SDK has built-in support for MCP, so you can attach MCP servers to your agent. Under the hood, the agent will query each attached server for its available tools (by calling `list_tools()`), making the LLM aware of those tool functions. When the LLM decides to use one of the tools, the SDK routes the request to the appropriate MCP server (calling `call_tool()` on that server. This flow is handled automatically, letting you focus on what the tools do rather than how to call them.
 
-> [NOTE!]
+> [!NOTE]
 > Before Agents SDK, ones have to use function calling and openai-to-mcp bridge for interaction over MCP protocol.
 
 There are two kinds of MCP server connections the SDK supports:
