@@ -1,4 +1,4 @@
-# ❤️ Advanced LLM Agent Patterns for Ecosystem Integration
+# ❤️ Advanced LLM Agent Patterns and Workflows
 
 **Introduction:** In previous lessons, we covered fundamental patterns for using LLMs (like prompt design, structured outputs, basic retrieval augmentation, etc.). Now it’s time to explore more **advanced patterns** that enable complex agent behaviors and seamless integration into real-world ecosystems. These patterns build on earlier concepts but go further – orchestrating multiple agents, incorporating expert feedback (AI or human), managing long-term state, optimizing how we retrieve and cache knowledge, and indexing content with intelligent helpers. We focus on patterns not fully covered before, expanding our toolkit for production-grade LLM systems.
 
@@ -320,6 +320,168 @@ flowchart TD
 * [Superlinked AI (2024). “Optimizing RAG with Hybrid Search & Reranking.”](https://superlinked.com/vectorhub/articles/optimizing-rag-with-hybrid-search-reranking#what-is-hybrid-search) Highlights the benefits of combining BM25 keyword search with vector search for LLM retrieval. Discusses merging methods and using rank fusion and rerankers to improve result relevance. Real-world observations: hybrid search handles edge cases (abbreviations, names) better and improves QA accuracy.
 * [Ernese Norelus (2025). “Cache-Augmented Generation (CAG): An Introduction.”](https://ernesenorelus.medium.com/cache-augmented-generation-cag-an-introduction-305c11de1b28) article explaining CAG vs. RAG. Describes how CAG preloads essential info into the LLM’s context or cache instead of retrieving per query, leveraging transformer KV cache to answer faster. Notes that with larger context models emerging, CAG can replace RAG in scenarios requiring repeated access to the same data.
 * [David Edri (2025). “CAG, TAG or Multi-Agentic RAG? – AI Strategies for Querying Structured Data.”](https://www.gigaspaces.com/blog/cag-tag-multi-agentic-rag) Defines Cache-Augmented Generation as adding a caching layer to avoid redundant database queries, with benefits in latency and cost. Also introduces Table-Augmented Generation (for structured tables) and Agentic RAG (agents using tools alongside RAG), reinforcing when to use cached context vs. active retrieval in enterprise scenarios.
+
+---
+
+Got it. Here's the new coding task section to be added at the end of `6-patterns.md`, following your previous format, using Python and OpenAI API. It demonstrates routing logic with three precise extraction agents on the Maersk report PDF.
+
+---
+
+## 🧪 Coding Task: Routing to Cached Document + Multi-Agent Extraction
+
+In this exercise, you'll implement a pattern combining **document caching**, **routing**, and **multi-agent extraction**. This simulates a real-world scenario where you want to extract different structured insights from a single unstructured document using **prompt-specialized agents**. You’ll:
+
+* Load a real Maersk annual report directly from a PDF link
+* Cache its content into OpenAI’s `/files` endpoint using GPT-4o
+* Route user queries to 3 distinct agents, each responsible for answering a specific question using the **cached file context**
+
+### 🔍 Your Task
+
+Write a Python script using the OpenAI SDK to:
+
+1. **Upload the PDF** from this URL:
+
+   * [Maersk Annual Report 2023 (PDF)](https://investor.maersk.com/static-files/0151a819-0c4f-4656-8177-a060921bb017)
+2. **Route** each of the 3 extraction tasks to its dedicated prompt agent:
+
+   * ✅ **Buyback Details Agent**: Extract the **month/year**, **total amount (in million USD)**, and **duration (in months)** of any share buyback program(s) mentioned.
+   * ✅ **Glossary Agent**: Find all glossary terms defined (structure as: term, definition).
+   * ✅ **Board of Directors Agent**: List names of the board members (structure: name only, one per line).
+3. Print the output from each agent clearly, ensuring structured formatting (dicts or tables).
+
+### 🔧 Notes & Hints
+
+* Use GPT-4o with `file=` input for the PDF context.
+* You may reuse your code from earlier tasks on unstructured checklists—focus on clarity of routing and precision of prompt for each role.
+* Use separate `system` messages (or descriptions) for each agent prompt.
+
+### 📌 Output Example (Buyback Agent)
+
+```json
+{
+  "announcement_date": "August 2023",
+  "amount_usd_millions": 1500,
+  "duration_months": 12
+}
+```
+
+### 📌 Output Example (Glossary Agent)
+
+```json
+[
+  { "term": "EBITDA", "definition": "Earnings before interest, taxes, depreciation, and amortization." },
+  { "term": "Free cash flow", "definition": "Cash available after capital expenditures." }
+]
+```
+
+### 📌 Output Example (Board Agent)
+
+```
+Robert M. Uggla  
+Marc Engel  
+Ane Mærsk Mc-Kinney Uggla  
+...
+```
+
+---
+
+This task reinforces **agent specialization**, **routing-to-agent logic**, and **caching** for cost-effective multi-question document analysis. Be precise with prompts, enforce structured output, and check that results are complete.
+
+You’re building a mini orchestration engine—no tools, just smart routing and prompts.
+
+---
+
+# Multi-Agent Routing with Document Caching
+
+In this coding task, we will build a **multi-agent extraction system** that answers different questions by routing them to specialized AI agents. We’ll also demonstrate **document caching** by uploading a reference document once and reusing it for multiple queries. This approach is useful for complex tasks where each query is best handled by a dedicated prompt or agent, and it avoids sending a large document with every request.
+
+We will use the [Maersk Report Q1 2025](https://investor.maersk.com/static-files/0151a819-0c4f-4656-8177-a060921bb017) as our data source. The system will handle three types of questions, each with its own agent and prompt:
+
+* **Buyback Details Agent:** Extracts share buy-back details (announcement month/year, amount in USD millions, and program duration in months) from the report, and outputs them as JSON.
+* **Glossary Agent:** Finds terms defined in the report’s glossary and returns a JSON list of `{term, definition}` pairs.
+* **Board Members Agent:** Lists the members of the Board of Directors from the report, outputting them as a simple bullet list.
+
+**Steps Overview:**
+
+1. **Upload & Cache the Document:** Use OpenAI’s API to put the PDF into prompt OR use the OpenAI File API. This stores the document on the OpenAI server so we don’t have to send the entire text in each request (simulating a cache).
+2. **Define Specialized Prompts:** Create a common system prompt to put the PDF into context, and use Structured Output for each agent, instructing how to use the cached document and how to format the answer.
+3. **Route Questions to Agents:** For each question, call the extra OpenAI API to route to the corresponding agent (hint: Each agent will extract the answer from the cached report and respond in the requested format).
+
+Let’s implement the solution using prompt drafts for each agent SO and questions (think how to route):
+
+```python
+buyback_draft_prompt = """
+    You are a finance analyst assistant.
+    Your task is to extract details about any share buy-back programs announced in the report. Focus on finding the **announcement date** (month and year), the **amount (in USD millions)**, and the **duration of the program (in months)** for each buyback.
+    Provide the output as a JSON array, where each element is an object with keys: `announcement_date`, `amount_millions_usd`, and `duration_months`.
+"""
+
+glossary_draft_prompt = """
+    You are a glossary extraction agent.
+    Your task is to list all the terms defined in the report’s glossary (Definition of Terms) along with their definitions.
+    Provide the output as a JSON array of objects, each with `term` and `definition`.
+""" 
+
+board_draft_prompt = """
+    You are a corporate governance assistant.\n
+    Extract the names of all members of the Board of Directors from the report.\n
+    Provide the output as a bullet-point list of the board members' names (and titles if available).
+"""
+
+# Define the user questions that will be routed to each agent.
+questions = [
+    {"user_question": "What are buyback details (month/year of announcement, amount in millions USD, duration in months)?"},
+    {"user_question": "What are terms defined in glossary (term, definition)?"},
+    {"user_question": "Who are members of the Board of Directors?"}
+]
+```
+
+In the code above, we create three separate agents by changing the **system prompt** for each query. We upload the PDF once and refer to it by `file_id` in the prompts (as a way to indicate the agent should use that cached document’s content). Each agent is instructed to output data in a specific format:
+
+* **Buyback Agent** – outputs a JSON array of buyback program details.
+* **Glossary Agent** – outputs a JSON array of glossary terms and definitions.
+* **Board Agent** – outputs a bullet list of board member names.
+
+We use a loop to simulate the *router* logic: it sends each question to the right agent based on the question’s topic. The `temperature` is set to 0 to reduce randomness, ensuring the output sticks to the instructed format.
+
+**Example Output:**
+
+When you run your code (with a valid API key and the PDF file), you might get results like the following for each agent:
+
+```text
+Buyback Agent answer:
+[ 
+  {"announcement_date": "August 2022", "amount_millions_usd": 5000, "duration_months": 24},
+  {"announcement_date": "November 2023", "amount_millions_usd": 1600, "duration_months": 6} 
+]
+
+Glossary Agent answer:
+[
+  {"term": "A.P. Moller - Maersk", "definition": "A.P. Moller - Maersk is referred to as the consolidated group of companies and A.P. Møller - Mærsk A/S as the parent company."},
+  {"term": "Backhaul", "definition": "The direction of the trade route that has the lowest volumes, whereas the opposite direction is referred to as headhaul."},
+  {"term": "CAPEX", "definition": "Cash payments for intangible assets and property, plant and equipment, excluding acquisitions and divestments."}
+  // ... more terms from the glossary ...
+]
+
+Board Agent answer:
+- Robert Mærsk Uggla (Chairman)
+- Marc Engel (Vice Chair)
+- Arne Karlsson
+- Bernard L. Bot
+- Amparo Moraleda
+- Marika Fredriksson
+- Kasper Rørsted
+- Thomas Lindegaard Madsen
+- Julija Voitiekute
+```
+
+Each agent has successfully extracted the relevant information in the requested format:
+
+* The **Buyback Agent** found share buy-back announcements (e.g., one in August 2022 for \~\$5 billion over 24 months, and one in November 2023 for \~\$1.6 billion over 6 months).
+* The **Glossary Agent** returned a list of glossary terms with definitions (sample terms shown above).
+* The **Board Agent** listed all members of the Board of Directors as bullet points.
+
+By caching the document on the OpenAI side and routing queries to specialized prompts, we created an efficient multi-agent system. This pattern allows each agent to focus on a specific extraction task while sharing a common data source, demonstrating how to **orchestrate multiple LLM calls** to handle different aspects of a complex query.
 
 ---
 ❤️ **LLM LAB – 2025**
