@@ -327,73 +327,10 @@ Got it. Here's the new coding task section to be added at the end of `6-patterns
 
 ---
 
-## 🧪 Coding Task: Routing to Cached Document + Multi-Agent Extraction
-
-In this exercise, you'll implement a pattern combining **document caching**, **routing**, and **multi-agent extraction**. This simulates a real-world scenario where you want to extract different structured insights from a single unstructured document using **prompt-specialized agents**. You’ll:
-
-* Load a real Maersk annual report directly from a PDF link
-* Cache its content into OpenAI’s `/files` endpoint using GPT-4o
-* Route user queries to 3 distinct agents, each responsible for answering a specific question using the **cached file context**
-
-### 🔍 Your Task
-
-Write a Python script using the OpenAI SDK to:
-
-1. **Upload the PDF** from this URL:
-
-   * [Maersk Annual Report 2023 (PDF)](https://investor.maersk.com/static-files/0151a819-0c4f-4656-8177-a060921bb017)
-2. **Route** each of the 3 extraction tasks to its dedicated prompt agent:
-
-   * ✅ **Buyback Details Agent**: Extract the **month/year**, **total amount (in million USD)**, and **duration (in months)** of any share buyback program(s) mentioned.
-   * ✅ **Glossary Agent**: Find all glossary terms defined (structure as: term, definition).
-   * ✅ **Board of Directors Agent**: List names of the board members (structure: name only, one per line).
-3. Print the output from each agent clearly, ensuring structured formatting (dicts or tables).
-
-### 🔧 Notes & Hints
-
-* Use GPT-4o with `file=` input for the PDF context.
-* You may reuse your code from earlier tasks on unstructured checklists—focus on clarity of routing and precision of prompt for each role.
-* Use separate `system` messages (or descriptions) for each agent prompt.
-
-### 📌 Output Example (Buyback Agent)
-
-```json
-{
-  "announcement_date": "August 2023",
-  "amount_usd_millions": 1500,
-  "duration_months": 12
-}
-```
-
-### 📌 Output Example (Glossary Agent)
-
-```json
-[
-  { "term": "EBITDA", "definition": "Earnings before interest, taxes, depreciation, and amortization." },
-  { "term": "Free cash flow", "definition": "Cash available after capital expenditures." }
-]
-```
-
-### 📌 Output Example (Board Agent)
-
-```
-Robert M. Uggla  
-Marc Engel  
-Ane Mærsk Mc-Kinney Uggla  
-...
-```
-
----
-
-This task reinforces **agent specialization**, **routing-to-agent logic**, and **caching** for cost-effective multi-question document analysis. Be precise with prompts, enforce structured output, and check that results are complete.
-
-You’re building a mini orchestration engine—no tools, just smart routing and prompts.
-
----
 
 # Multi-Agent Routing with Document Caching
 
-In this coding task, we will build a **multi-agent extraction system** that answers different questions by routing them to specialized AI agents. We’ll also demonstrate **document caching** by uploading a reference document once and reusing it for multiple queries. This approach is useful for complex tasks where each query is best handled by a dedicated prompt or agent, and it avoids sending a large document with every request.
+In this exercise, you'll implement an agent combining **document caching**, **routing**, and **multi-agent extraction**. This simulates a real-world scenario where you want to extract different structured insights from a single unstructured document using **prompt-specialized agents**.
 
 We will use the [Maersk Report Q1 2025](https://investor.maersk.com/static-files/0151a819-0c4f-4656-8177-a060921bb017) as our data source. The system will handle three types of questions, each with its own agent and prompt:
 
