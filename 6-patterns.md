@@ -437,8 +437,8 @@ Below are three proven approaches, that all plug neatly into the multi-agent pat
 | Approach                                   | When to use                                                                           | Key tools / libraries                                                                                                                                                                                                                                                   |
 | ------------------------------------------ | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Pre-convert to Markdown / JSON locally** | Bulk pipelines, deterministic layout, large PDFs                                      | [*Docling* — layout-aware PDF→MD/JSON ](https://github.com/docling-project/docling); [*MarkItDown* (Microsoft)](https://github.com/microsoft/markitdown)                             |
-| **Page-image streaming into GPT-4o**       | Multi-column scans, charts, handwritten forms                                         | `pdf2image` → Base64 JPEG → GPT-4o VLM                                                                                                                                                                                                                                  |
-| **Direct Base64 in `chat.completions`**    | Small docs (≤ 10 MB) like the 228 KB Maersk PDF; quick prototypes; strict JSON output | [OpenAI PDF guide](https://platform.openai.com/docs/guides/pdf-files); [Structured-JSON Beta](https://platform.openai.com/docs/guides/structured-outputs) |
+| **Page-image streaming into GPT-4o**       | Multi-column scans, charts, handwritten forms                                         | `pdf2image` → Base64 JPEG → GPT-4o VLM  [OpenAI Cookbook — *Parse PDF docs for RAG* notebook](https://github.com/openai/openai-cookbook/blob/main/examples/Parse_PDF_docs_for_RAG.ipynb)                                                    |
+| **Direct Base64 in `chat.completions`**    | Small docs (≤ 10 MB) like the 228 KB Maersk PDF; quick prototypes; strict JSON output | [OpenAI PDF guide — direct Base64/file messages](https://platform.openai.com/docs/guides/pdf-files?api-mode=chat#base64-encoded-files); [OpenAI Structured Output (Pydantic)](https://platform.openai.com/docs/guides/structured-outputs?api-mode=chat#examples) |
 
 > **Tip ▪︎** Separate *parsing* from *extraction* for best accuracy—first convert the file (or let GPT-4o read it), **then** run domain-specific extraction prompts.
 
@@ -500,16 +500,6 @@ print(resp.choices[0].message.content)  # JSON ready for downstream use
 1. **One call → one step**: the complete PDF travels inside the request; GPT-4o both reads *and* extracts.
 2. **Schema enforcement**: the `response_format` parameter (beta) guarantees your downstream code always receives valid JSON.
 3. **Reuse**: for other agents, pass the **same** Base64 payload, change only the prompt + schema.
-
----
-
-#### Helpful Links
-
-* [OpenAI **PDF file guide** — direct Base64/file messages](https://platform.openai.com/docs/guides/pdf-files?api-mode=chat#base64-encoded-files)
-* [OpenAI **Structured output (Pydantic)** — enforce output schemas](https://platform.openai.com/docs/guides/structured-outputs?api-mode=chat#examples)
-* [OpenAI Cookbook — *Parse PDF docs for RAG* notebook](https://github.com/openai/openai-cookbook/blob/main/examples/Parse_PDF_docs_for_RAG.ipynb)
-* [Docling — advanced PDF→Markdown/JSON](https://github.com/docling-project/docling)
-* [MarkItDown (Microsoft) — simple PDF→Markdown CLI](https://github.com/microsoft/markitdown)
 
 ---
 ❤️ **LLM LAB – 2025**
