@@ -323,10 +323,6 @@ flowchart TD
 
 ---
 
-Got it. Here's the new coding task section to be added at the end of `6-patterns.md`, following your previous format, using Python and OpenAI API. It demonstrates routing logic with three precise extraction agents on the Maersk report PDF.
-
----
-
 
 # Multi-Agent Routing with Document Caching
 
