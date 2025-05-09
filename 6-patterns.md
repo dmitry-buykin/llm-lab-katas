@@ -1,4 +1,4 @@
-# Advanced LLM Agent Patterns for Ecosystem Integration
+# ❤️ Advanced LLM Agent Patterns for Ecosystem Integration
 
 **Introduction:** In previous lessons, we covered fundamental patterns for using LLMs (like prompt design, structured outputs, basic retrieval augmentation, etc.). Now it’s time to explore more **advanced patterns** that enable complex agent behaviors and seamless integration into real-world ecosystems. These patterns build on earlier concepts but go further – orchestrating multiple agents, incorporating expert feedback (AI or human), managing long-term state, optimizing how we retrieve and cache knowledge, and indexing content with intelligent helpers. We focus on patterns not fully covered before, expanding our toolkit for production-grade LLM systems.
 
@@ -213,7 +213,7 @@ You can still apply classic tricks (PCA, product-quantization, prototype averagi
 
 ```mermaid
 flowchart TD
-    RawText["Input text"] --> Embed["OpenAI embeddings\n(dimensions=128)"]
+    RawText["Input text"] --> Embed["OpenAI embeddings (dimensions=128)"]
     Embed --> LowDimVec["128-d vector"]
     LowDimVec -->|k-NN / cosine| Classifier["Intent / label"]
     LowDimVec -->|K-means / HDBSCAN| Clusterer["Topic clusters"]
@@ -320,3 +320,6 @@ flowchart TD
 * [Superlinked AI (2024). “Optimizing RAG with Hybrid Search & Reranking.”](https://superlinked.com/vectorhub/articles/optimizing-rag-with-hybrid-search-reranking#what-is-hybrid-search) Highlights the benefits of combining BM25 keyword search with vector search for LLM retrieval. Discusses merging methods and using rank fusion and rerankers to improve result relevance. Real-world observations: hybrid search handles edge cases (abbreviations, names) better and improves QA accuracy.
 * [Ernese Norelus (2025). “Cache-Augmented Generation (CAG): An Introduction.”](https://ernesenorelus.medium.com/cache-augmented-generation-cag-an-introduction-305c11de1b28) article explaining CAG vs. RAG. Describes how CAG preloads essential info into the LLM’s context or cache instead of retrieving per query, leveraging transformer KV cache to answer faster. Notes that with larger context models emerging, CAG can replace RAG in scenarios requiring repeated access to the same data.
 * [David Edri (2025). “CAG, TAG or Multi-Agentic RAG? – AI Strategies for Querying Structured Data.”](https://www.gigaspaces.com/blog/cag-tag-multi-agentic-rag) Defines Cache-Augmented Generation as adding a caching layer to avoid redundant database queries, with benefits in latency and cost. Also introduces Table-Augmented Generation (for structured tables) and Agentic RAG (agents using tools alongside RAG), reinforcing when to use cached context vs. active retrieval in enterprise scenarios.
+
+---
+❤️ **LLM LAB – 2025**
