@@ -1,0 +1,1832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Context Analyzer - Enhanced Edition</title>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+    
+    <style>
+        /* Light Maersk Professional Theme */
+        :root {
+            --primary-blue: #42B0D5;
+            --dark-blue: #1F2937;
+            --light-blue: #F0F9FF;
+            --gray-600: #6B7280;
+            --gray-400: #9CA3AF;
+            --gray-100: #F3F4F6;
+            --white: #FFFFFF;
+            --success-green: #10B981;
+            --warning-amber: #FCD34D;  /* Light yellow for inexact */
+            --error-red: #EF4444;
+            --info-blue: #0EA5E9;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: var(--white);
+            color: var(--dark-blue);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header-section {
+            background: linear-gradient(180deg, var(--light-blue) 0%, var(--white) 100%);
+            padding: 3rem 0 2rem;
+            border-bottom: 1px solid rgba(66, 176, 213, 0.15);
+        }
+
+        .header-section h1 {
+            font-size: 2.5rem;
+            font-weight: 200;
+            letter-spacing: -0.03em;
+            color: var(--dark-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .header-section p {
+            color: var(--gray-600);
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Collapsible Settings Panel */
+        .settings-panel {
+            background: var(--gray-100);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .settings-panel.collapsed .settings-content {
+            display: none;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .settings-header h6 {
+            margin: 0;
+            color: var(--gray-600);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .collapse-icon {
+            transition: transform 0.3s;
+        }
+
+        .settings-panel.collapsed .collapse-icon {
+            transform: rotate(180deg);
+        }
+
+        .settings-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        /* Input Section */
+        .input-section {
+            background: var(--white);
+            border: 1px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .input-section.minimized {
+            padding: 1rem;
+        }
+
+        .input-section.minimized .full-content {
+            display: none;
+        }
+
+        .input-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toggle-source-btn {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .toggle-source-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Form Elements */
+        .form-label {
+            font-weight: 500;
+            color: var(--dark-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control, .form-select {
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(66, 176, 213, 0.1);
+            outline: none;
+        }
+
+        textarea.form-control {
+            min-height: 200px;
+            resize: vertical;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: var(--primary-blue);
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #3A9FC4;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--gray-100);
+            border: 1px solid var(--gray-400);
+            color: var(--dark-blue);
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        /* Progress Section */
+        .progress-section {
+            display: none;
+            background: var(--white);
+            border: 1px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .progress-section.active {
+            display: block;
+        }
+
+        .progress-steps {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        /* Connecting lines between steps */
+        .progress-steps::before {
+            content: '';
+            position: absolute;
+            top: 1rem;
+            left: 20%;
+            right: 20%;
+            height: 2px;
+            background: var(--gray-100);
+            z-index: 0;
+        }
+
+        .progress-step {
+            text-align: center;
+            opacity: 0.4;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+            background: var(--white);
+        }
+
+        .progress-step.active {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .progress-step.active .step-icon {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .progress-step.completed {
+            opacity: 0.7;
+        }
+
+        .progress-step.completed::after {
+            content: '✓';
+            position: absolute;
+            top: -5px;
+            right: 35%;
+            color: var(--success-green);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .step-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: var(--white);
+            padding: 0 0.5rem;
+        }
+
+        .step-label {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+
+        /* Results Section */
+        .results-section {
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        /* Score Card */
+        .score-card {
+            background: linear-gradient(135deg, var(--light-blue) 0%, var(--white) 100%);
+            border: 1px solid rgba(66, 176, 213, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .score-value {
+            font-size: 3rem;
+            font-weight: 200;
+            color: var(--primary-blue);
+        }
+
+        .score-label {
+            color: var(--gray-600);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .score-details {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .score-detail {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .score-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .score-indicator.exact {
+            background: var(--success-green);
+        }
+
+        .score-indicator.inexact {
+            background: var(--warning-amber);
+        }
+
+        /* Answer Section */
+        .answer-section {
+            background: var(--white);
+            border: 1px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .answer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .answer-summary {
+            background: var(--light-blue);
+            border-left: 3px solid var(--primary-blue);
+            border-radius: 6px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .answer-summary h4 {
+            color: var(--dark-blue);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .answer-summary p {
+            color: var(--dark-blue);
+            margin: 0 0 0.5rem 0;
+            line-height: 1.8;
+        }
+        
+        .answer-summary p:last-child {
+            margin-bottom: 0;
+        }
+
+        .answer-detailed {
+            color: var(--dark-blue);
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+
+        /* Markdown content styling */
+        .answer-detailed p,
+        .answer-summary p {
+            margin-bottom: 1rem;
+        }
+
+        .answer-detailed ul, .answer-detailed ol,
+        .answer-summary ul, .answer-summary ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .answer-detailed li,
+        .answer-summary li {
+            margin-bottom: 0.5rem;
+        }
+
+        .answer-detailed code,
+        .answer-summary code {
+            background: var(--gray-100);
+            padding: 0.125rem 0.25rem;
+            border-radius: 3px;
+            font-size: 0.875em;
+            color: var(--dark-blue);
+        }
+        
+        .answer-detailed pre,
+        .answer-summary pre {
+            background: var(--gray-100);
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        
+        .answer-detailed strong,
+        .answer-summary strong {
+            font-weight: 600;
+            color: var(--dark-blue);
+        }
+        
+        .answer-detailed em,
+        .answer-summary em {
+            font-style: italic;
+        }
+        
+        .answer-detailed blockquote,
+        .answer-summary blockquote {
+            border-left: 3px solid var(--primary-blue);
+            padding-left: 1rem;
+            margin: 1rem 0;
+            color: var(--gray-600);
+        }
+
+        /* Tabs */
+        .nav-tabs {
+            border-bottom: 1px solid var(--gray-100);
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-tabs .nav-link {
+            color: var(--gray-600);
+            border: none;
+            border-bottom: 2px solid transparent;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .nav-tabs .nav-link:hover {
+            color: var(--primary-blue);
+            border-bottom-color: rgba(66, 176, 213, 0.3);
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--primary-blue);
+            background: transparent;
+            border-bottom-color: var(--primary-blue);
+        }
+
+        .tab-content {
+            padding: 1.5rem 0;
+        }
+
+        /* Evidence Items */
+        .evidence-item {
+            background: var(--gray-100);
+            border-left: 3px solid var(--primary-blue);
+            border-radius: 6px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .evidence-item.inexact {
+            border-left-color: var(--warning-amber);
+            background: rgba(252, 211, 77, 0.1);
+        }
+
+        .evidence-item.fact {
+            border-left-color: var(--info-blue);
+        }
+
+        .evidence-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 0.5rem;
+        }
+
+        .evidence-id {
+            background: var(--primary-blue);
+            color: var(--white);
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .evidence-item.inexact .evidence-id {
+            background: var(--warning-amber);
+            color: var(--dark-blue);
+        }
+
+        .evidence-item.fact .evidence-id {
+            background: var(--info-blue);
+        }
+
+        .evidence-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-badge {
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .status-badge.exact {
+            background: var(--success-green);
+            color: white;
+        }
+
+        .status-badge.inexact {
+            background: var(--warning-amber);
+            color: var(--dark-blue);
+        }
+
+        .evidence-relevance {
+            color: var(--gray-600);
+            font-size: 0.875rem;
+            font-style: italic;
+            margin-top: 0.5rem;
+        }
+
+        .evidence-text {
+            color: var(--dark-blue);
+            line-height: 1.6;
+            margin: 0.5rem 0;
+        }
+
+        .evidence-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: var(--gray-400);
+            margin-top: 0.5rem;
+        }
+
+        /* Log Items - Technical Style */
+        .log-container {
+            background: #1a1a1a;
+            color: #e0e0e0;
+            font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 0.8rem;
+            padding: 1rem;
+            border-radius: 6px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-item {
+            padding: 0.25rem 0;
+            line-height: 1.4;
+        }
+
+        .log-time {
+            color: #888;
+            margin-right: 0.75rem;
+        }
+
+        .log-type {
+            font-weight: bold;
+            margin-right: 0.5rem;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+        }
+
+        .log-type.info {
+            color: #4FC3F7;
+            background: rgba(79, 195, 247, 0.1);
+        }
+
+        .log-type.success {
+            color: #81C784;
+            background: rgba(129, 199, 132, 0.1);
+        }
+
+        .log-type.error {
+            color: #E57373;
+            background: rgba(229, 115, 115, 0.1);
+        }
+
+        .log-type.warning {
+            color: #FFB74D;
+            background: rgba(255, 183, 77, 0.1);
+        }
+
+        .log-message {
+            color: #e0e0e0;
+        }
+
+        .log-item.error .log-message {
+            color: #FFAB91;
+        }
+
+        .log-item.success .log-message {
+            color: #A5D6A7;
+        }
+
+        .log-item.warning .log-message {
+            color: #FFE082;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 2rem 3rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--gray-100);
+            border-top-color: var(--primary-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Utility Classes */
+        .text-muted { color: var(--gray-600); }
+        .text-small { font-size: 0.875rem; }
+        .mb-0 { margin-bottom: 0; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 1.5rem; }
+        .mb-4 { margin-bottom: 2rem; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header-section">
+        <div class="main-container">
+            <h1>Context Analyzer</h1>
+            <p>Extract precise citations and facts to answer questions from documents</p>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Settings Panel (Collapsible) -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-header" onclick="app.toggleSettings()">
+                <h6>API Settings</h6>
+                <span class="collapse-icon">▼</span>
+            </div>
+            <div class="settings-content">
+                <div class="settings-row">
+                    <div>
+                        <label for="apiKey" class="form-label text-small">API Key</label>
+                        <input type="password" class="form-control" id="apiKey" placeholder="sk-...">
+                    </div>
+                    <div>
+                        <label for="apiBase" class="form-label text-small">API Base URL</label>
+                        <input type="text" class="form-control" id="apiBase" value="https://api.openai.com/">
+                    </div>
+                    <div>
+                        <label for="model" class="form-label text-small">Model</label>
+                        <input type="text" class="form-control" id="model" value="gpt-4.1-mini" placeholder="gpt-4.1-mini">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Section -->
+        <div class="input-section" id="inputSection">
+            <div class="input-header mb-3">
+                <h5 id="inputTitle">Question</h5>
+                <button class="toggle-source-btn" id="toggleSourceBtn" style="display: none;" onclick="app.toggleInputView()">
+                    Hide Source
+                </button>
+            </div>
+            
+            <!-- Question field always visible -->
+            <div class="mb-3" id="questionContainer">
+                <input type="text" class="form-control" id="question" 
+                       placeholder="What specific information are you looking for?">
+            </div>
+            
+            <div class="full-content">
+
+                <div class="mb-3">
+                    <label for="document" class="form-label">Document</label>
+                    <div class="stats-bar" id="statsBar">
+                        <span id="charCount">0 characters</span>
+                        <span id="wordCount">0 words</span>
+                        <span id="tokenCount">~0 tokens</span>
+                    </div>
+                    <textarea class="form-control" id="document" 
+                              placeholder="Paste your document here, or upload a file below..."></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="fileInput" class="form-label">Or upload a document</label>
+                    <input type="file" class="form-control" id="fileInput" 
+                           accept=".pdf,.txt,.md,.markdown,.docx">
+                    <div class="text-small text-muted mt-1">Supported: PDF, TXT, Markdown, DOCX</div>
+                </div>
+
+                <div class="text-center">
+                    <button class="btn btn-primary" id="analyzeBtn">
+                        Analyze Document
+                    </button>
+                    <button class="btn btn-secondary ms-2" id="clearBtn">
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Section -->
+        <div class="progress-section" id="progressSection">
+            <div class="progress-steps">
+                <div class="progress-step" data-step="extract">
+                    <div class="step-icon">📝</div>
+                    <div class="step-label">Extracting Context</div>
+                </div>
+                <div class="progress-step" data-step="validate">
+                    <div class="step-icon">✓</div>
+                    <div class="step-label">Validating</div>
+                </div>
+                <div class="progress-step" data-step="answer">
+                    <div class="step-icon">💡</div>
+                    <div class="step-label">Generating Answer</div>
+                </div>
+            </div>
+            <div class="text-center text-muted" id="progressMessage">Initializing...</div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection">
+            <!-- Score Card -->
+            <div class="score-card">
+                <div class="score-value" id="scoreValue">0%</div>
+                <div class="score-label" id="scoreLabel">Exact Match Rate</div>
+                <div class="score-details">
+                    <div class="score-detail">
+                        <span class="score-indicator exact"></span>
+                        <span id="exactCount">0 exact matches</span>
+                    </div>
+                    <div class="score-detail">
+                        <span class="score-indicator inexact"></span>
+                        <span id="inexactCount">0 inexact matches</span>
+                    </div>
+                </div>
+                <div class="text-muted text-small mt-2" id="scoreExplanation">
+                    Shows percentage of citations that match exactly vs inexact/normalized matches
+                </div>
+            </div>
+
+            <!-- Answer Section -->
+            <div class="answer-section">
+                <div class="answer-header">
+                    <h4>Answer</h4>
+                    <div>
+                        <button class="btn btn-sm btn-primary" id="copyAnswerBtn">
+                            Copy Answer
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                <div class="answer-summary">
+                    <h4>Summary</h4>
+                    <p id="answerSummary">Loading summary...</p>
+                </div>
+
+                <!-- Detailed Answer -->
+                <div class="answer-detailed" id="answerDetailed">
+                    Loading detailed answer...
+                </div>
+            </div>
+
+            <!-- Evidence Tabs -->
+            <div class="evidence-section">
+                <ul class="nav nav-tabs" id="evidenceTabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#citationsTab">
+                            Citations <span class="badge bg-secondary" id="citationsBadge">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#factsTab">
+                            Facts <span class="badge bg-secondary" id="factsBadge">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#contextTab">
+                            Context
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#logsTab">
+                            Logs
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="citationsTab">
+                        <div id="citationsList"></div>
+                    </div>
+                    <div class="tab-pane fade" id="factsTab">
+                        <div id="factsList"></div>
+                    </div>
+                    <div class="tab-pane fade" id="contextTab">
+                        <pre id="contextContent" style="white-space: pre-wrap;"></pre>
+                    </div>
+                    <div class="tab-pane fade" id="logsTab">
+                        <div class="log-container" id="logsList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div id="loadingMessage">Processing...</div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    
+    <!-- Mammoth.js for DOCX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- Main Application -->
+    <script type="module">
+        import { z } from 'https://esm.sh/zod@3.23.8';
+        import { zodToJsonSchema } from 'https://esm.sh/zod-to-json-schema@3.23.0';
+
+        // Configure PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const app = {
+            state: {
+                document: '',
+                question: '',
+                context: null,
+                answer: '',
+                summary: '',
+                logs: [],
+                inputMinimized: false
+            },
+
+            // Initialize
+            init() {
+                this.loadSettings();
+                this.loadQueryParams();
+                this.attachEventListeners();
+                this.checkAndCollapseSettings();
+                this.log('Context Analyzer initialized', 'info');
+            },
+            
+            // Load optional settings from URL query parameters
+            loadQueryParams() {
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    
+                    // Check for optional API configuration in query params
+                    const apiBase = params.get('api_base');
+                    const apiKey = params.get('api_key');
+                    const model = params.get('model');
+                    
+                    // Only override if parameter is provided
+                    if (apiBase) {
+                        document.getElementById('apiBaseInput').value = decodeURIComponent(apiBase);
+                        this.log(`Loaded API Base from URL: ${apiBase}`, 'info');
+                    }
+                    
+                    if (apiKey) {
+                        document.getElementById('apiKeyInput').value = decodeURIComponent(apiKey);
+                        this.log('Loaded API Key from URL', 'info');
+                    }
+                    
+                    if (model) {
+                        document.getElementById('modelInput').value = decodeURIComponent(model);
+                        this.log(`Loaded Model from URL: ${model}`, 'info');
+                    }
+                    
+                    // Save to localStorage if any params were provided
+                    if (apiBase || apiKey || model) {
+                        this.saveSettings();
+                        this.log('Query parameters saved to localStorage', 'info');
+                    }
+                } catch (error) {
+                    console.warn('Error loading query parameters:', error);
+                    // Continue with normal initialization
+                }
+            },
+
+            // Check if settings exist and collapse panel
+            checkAndCollapseSettings() {
+                const apiKey = localStorage.getItem('aiccApiKey');
+                if (apiKey) {
+                    document.getElementById('settingsPanel').classList.add('collapsed');
+                }
+            },
+
+            // Toggle settings panel
+            toggleSettings() {
+                const panel = document.getElementById('settingsPanel');
+                panel.classList.toggle('collapsed');
+            },
+
+            // Toggle input view
+            toggleInputView() {
+                const inputSection = document.getElementById('inputSection');
+                const toggleBtn = document.getElementById('toggleSourceBtn');
+                const toggleFromResults = document.getElementById('toggleSourceFromResults');
+                
+                this.state.inputMinimized = !this.state.inputMinimized;
+                
+                if (this.state.inputMinimized) {
+                    inputSection.classList.add('minimized');
+                    toggleBtn.textContent = 'Show Source';
+                    if (toggleFromResults) toggleFromResults.textContent = 'View Source';
+                } else {
+                    inputSection.classList.remove('minimized');
+                    toggleBtn.textContent = 'Hide Source';
+                    if (toggleFromResults) toggleFromResults.textContent = 'Hide Source';
+                }
+            },
+
+            // Load settings from localStorage
+            loadSettings() {
+                const apiKey = localStorage.getItem('aiccApiKey') || '';
+                const apiBase = localStorage.getItem('aiccApiBase') || 'https://api.openai.com/v1';
+                const model = localStorage.getItem('aiccModel') || 'gpt-4.1-mini';
+
+                document.getElementById('apiKey').value = apiKey;
+                document.getElementById('apiBase').value = apiBase;
+                document.getElementById('model').value = model;
+            },
+
+            // Save settings to localStorage
+            saveSettings() {
+                localStorage.setItem('aiccApiKey', document.getElementById('apiKey').value);
+                localStorage.setItem('aiccApiBase', document.getElementById('apiBase').value);
+                localStorage.setItem('aiccModel', document.getElementById('model').value);
+            },
+
+            // Attach event listeners
+            attachEventListeners() {
+                // Settings
+                document.getElementById('apiKey').addEventListener('change', () => this.saveSettings());
+                document.getElementById('apiBase').addEventListener('change', () => this.saveSettings());
+                document.getElementById('model').addEventListener('change', () => this.saveSettings());
+
+                // Document input
+                document.getElementById('document').addEventListener('input', () => this.updateStats());
+                document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileUpload(e));
+
+                // Buttons
+                document.getElementById('analyzeBtn').addEventListener('click', () => this.analyze());
+                document.getElementById('clearBtn').addEventListener('click', () => this.clear());
+                document.getElementById('copyAnswerBtn').addEventListener('click', () => this.copyAnswer());
+            },
+
+            // Update document statistics
+            updateStats() {
+                const text = document.getElementById('document').value;
+                const chars = text.length;
+                const words = text.trim().split(/\s+/).filter(w => w).length;
+                const tokens = Math.ceil(chars / 4); // Rough estimate
+
+                document.getElementById('charCount').textContent = `${chars.toLocaleString()} characters`;
+                document.getElementById('wordCount').textContent = `${words.toLocaleString()} words`;
+                document.getElementById('tokenCount').textContent = `~${tokens.toLocaleString()} tokens`;
+            },
+
+            // Handle file upload
+            async handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                try {
+                    this.showLoading(true, 'Loading file...');
+                    const text = await this.extractTextFromFile(file);
+                    document.getElementById('document').value = text;
+                    this.updateStats();
+                    this.log(`Loaded file: ${file.name}`, 'success');
+                    
+                    // Show toggle button when document is loaded
+                    document.getElementById('toggleSourceBtn').style.display = 'inline-block';
+                } catch (error) {
+                    this.log(`Error loading file: ${error.message}`, 'error');
+                    alert(`Error loading file: ${error.message}`);
+                } finally {
+                    this.showLoading(false);
+                }
+            },
+
+            // Extract text from file
+            async extractTextFromFile(file) {
+                const extension = file.name.split('.').pop().toLowerCase();
+
+                if (extension === 'pdf') {
+                    return await this.extractTextFromPDF(file);
+                } else if (extension === 'docx') {
+                    return await this.extractTextFromDOCX(file);
+                } else if (['txt', 'md', 'markdown'].includes(extension)) {
+                    return await file.text();
+                } else {
+                    throw new Error(`Unsupported file type: ${extension}`);
+                }
+            },
+
+            // Extract text from PDF
+            async extractTextFromPDF(file) {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let text = '';
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    
+                    // Join items properly, preserving structure
+                    let pageText = '';
+                    let lastY = null;
+                    
+                    content.items.forEach(item => {
+                        // Add newline if Y position changes significantly (new line)
+                        if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+                            pageText += '\n';
+                        }
+                        pageText += item.str;
+                        lastY = item.transform[5];
+                    });
+                    
+                    text += this.cleanPDFText(pageText) + '\n\n';
+                }
+
+                return text.trim();
+            },
+
+            // Extract text from DOCX
+            async extractTextFromDOCX(file) {
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await mammoth.extractRawText({ arrayBuffer });
+                return result.value;
+            },
+
+            // Clean PDF text
+            cleanPDFText(text) {
+                // Fix hyphenated words at line breaks
+                text = text.replace(/(\w)-\s+(\w)/g, '$1$2');
+                
+                // Fix missing spaces between words (common PDF issue)
+                // Add space before uppercase letters that follow lowercase
+                text = text.replace(/([a-z])([A-Z])/g, '$1 $2');
+                
+                // Fix common concatenations
+                text = text.replace(/([a-z])(\d)/g, '$1 $2'); // letter followed by number
+                text = text.replace(/(\d)([A-Z])/g, '$1 $2'); // number followed by uppercase
+                
+                // Replace excessive whitespace
+                text = text.replace(/\s+/g, ' ');
+                
+                // Remove page numbers alone on lines
+                text = text.replace(/^\d+$/gm, '');
+                
+                return text.trim();
+            },
+
+            // Text normalization for comparison
+            normalizeForComparison(text) {
+                // Normalize Unicode
+                text = text.normalize('NFKD');
+                
+                // Collapse whitespace
+                text = text.replace(/\s+/g, ' ');
+                
+                // Remove invisible characters
+                text = text.replace(/[\u200b\u200c\u200d\ufeff\u00ad]/g, '');
+                
+                // Normalize quotes and dashes
+                text = text.replace(/[""""""]/g, '"');
+                text = text.replace(/['']/g, "'");
+                text = text.replace(/[—–−]/g, '-');
+                
+                return text.trim().toLowerCase();
+            },
+
+            // Find text in document (lenient)
+            findInDocument(needle, haystack) {
+                // Try exact match
+                if (haystack.includes(needle)) {
+                    return { found: true, exact: true };
+                }
+
+                // Try normalized match
+                const needleNorm = this.normalizeForComparison(needle);
+                const haystackNorm = this.normalizeForComparison(haystack);
+                
+                if (haystackNorm.includes(needleNorm)) {
+                    return { found: true, exact: false };
+                }
+                
+                // Try without spaces (for PDF concatenation issues)
+                const needleNoSpaces = needleNorm.replace(/\s+/g, '');
+                const haystackNoSpaces = haystackNorm.replace(/\s+/g, '');
+                if (haystackNoSpaces.includes(needleNoSpaces) && needleNoSpaces.length > 20) {
+                    return { found: true, exact: false };
+                }
+
+                // Try partial match for long text
+                const words = needleNorm.split(' ');
+                if (words.length >= 6) {  // Lowered threshold
+                    const startPhrase = words.slice(0, 3).join(' ');
+                    const endPhrase = words.slice(-3).join(' ');
+                    
+                    const startPos = haystackNorm.indexOf(startPhrase);
+                    if (startPos !== -1) {
+                        const searchWindow = haystackNorm.slice(startPos, startPos + needle.length * 3);
+                        if (searchWindow.includes(endPhrase)) {
+                            return { found: true, exact: false };
+                        }
+                    }
+                }
+                
+                // Try even more lenient - just check if most words exist
+                if (words.length >= 5) {
+                    const significantWords = words.filter(w => w.length > 3);
+                    if (significantWords.length >= 3) {
+                        const foundWords = significantWords.filter(w => haystackNorm.includes(w));
+                        if (foundWords.length >= significantWords.length * 0.7) {
+                            return { found: true, exact: false };
+                        }
+                    }
+                }
+
+                return { found: false, exact: false };
+            },
+
+            // Main analysis function
+            async analyze() {
+                const question = document.getElementById('question').value.trim();
+                const documentText = document.getElementById('document').value.trim();
+                const apiKey = document.getElementById('apiKey').value.trim();
+                const apiBase = document.getElementById('apiBase').value.trim();
+                const model = document.getElementById('model').value.trim();
+
+                // Validation
+                if (!apiKey) {
+                    alert('Please enter your API key');
+                    return;
+                }
+                if (!question) {
+                    alert('Please enter a question');
+                    return;
+                }
+                if (!documentText) {
+                    alert('Please provide a document');
+                    return;
+                }
+
+                this.state.question = question;
+                this.state.document = documentText;
+
+                try {
+                    // Show progress and minimize input
+                    this.state.inputMinimized = true;
+                    document.getElementById('inputSection').classList.add('minimized');
+                    document.getElementById('toggleSourceBtn').textContent = 'Show Source';
+                    document.getElementById('progressSection').classList.add('active');
+                    this.setProgressStep('extract');
+
+                    // Extract context with summary
+                    this.log('Extracting citations and facts...', 'info');
+                    const context = await this.extractContext(documentText, question, apiKey, apiBase, model);
+                    
+                    // Validate
+                    this.setProgressStep('validate');
+                    this.log('Validating extracted content...', 'info');
+                    const validatedContext = this.validateContext(context, documentText);
+                    this.state.context = validatedContext;
+                    
+                    // Generate answer with summary
+                    this.setProgressStep('answer');
+                    this.log('Generating comprehensive answer...', 'info');
+                    const fullAnswer = await this.generateAnswer(validatedContext, question, apiKey, apiBase, model);
+                    
+                    // Parse summary and detailed answer (assuming format: summary paragraph, then detailed answer)
+                    const answerParts = fullAnswer.split('\n\n');
+                    // First paragraph is the summary
+                    this.state.summary = answerParts[0] || '';
+                    // Rest is the detailed answer
+                    this.state.answer = answerParts.slice(1).join('\n\n');
+                    
+                    // Calculate score
+                    const score = this.calculateScore(validatedContext);
+                    
+                    // Display results
+                    this.displayResults(validatedContext, this.state.answer, this.state.summary, score);
+                    
+                    // Show results section
+                    document.getElementById('progressSection').classList.remove('active');
+                    document.getElementById('resultsSection').classList.add('active');
+                    
+                    // Show toggle button
+                    document.getElementById('toggleSourceBtn').style.display = 'inline-block';
+                    
+                    this.log('Analysis complete', 'success');
+                    
+                } catch (error) {
+                    this.log(`Error: ${error.message}`, 'error');
+                    alert(`Error: ${error.message}`);
+                    document.getElementById('progressSection').classList.remove('active');
+                    document.getElementById('inputSection').classList.remove('minimized');
+                    this.state.inputMinimized = false;
+                }
+            },
+
+            // Extract context using function calling with summary
+            async extractContext(documentText, question, apiKey, apiBase, model) {
+                // Define schemas with summary field
+                const CitationSchema = z.object({
+                    text: z.string().describe("EXACT verbatim quote from document, copy-paste without any changes"),
+                    relevance: z.string().describe("Brief explanation (5-10 words) of how this quote helps answer the question")
+                });
+
+                const FactSchema = z.object({
+                    claim: z.string().describe("Specific fact (focus on numbers, dates, versions, names, API details)"),
+                    evidence: z.string().describe("EXACT verbatim text from document that proves this fact"),
+                    category: z.enum(["NUMBER", "DATE", "VERSION", "NAME", "API", "SPECS", "OTHER"])
+                });
+
+                const ContextExtractionSchema = z.object({
+                    reasoning: z.string().describe("Brief analysis (2-3 sentences) explaining what information is needed"),
+                    citations: z.array(CitationSchema).max(15).describe("Most important verbatim quotes relevant to the question"),
+                    facts: z.array(FactSchema).max(10).describe("Specific concrete facts critical for answering the question")
+                });
+
+                const systemPrompt = `You are a meticulous document analyst specializing in extracting precise information.
+
+Your task is to extract verbatim quotes and specific facts to answer the given question.
+
+STRICT RULES:
+1. Every quote must be EXACTLY as written in the document - copy and paste without any changes
+2. Facts should focus on concrete details: numbers, dates, versions, names, technical specifications
+3. Consider what information is specifically needed to answer the question
+4. Do not paraphrase or summarize - only extract what exists verbatim
+5. For facts, the evidence must be the exact text that proves the fact`;
+
+                const userPrompt = `Question to answer: ${question}
+
+Document to analyze:
+${documentText}
+
+Extract citations and facts to comprehensively answer this question.`;
+
+                const messages = [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ];
+
+                // Convert Zod schema to JSON Schema for function calling
+                const extractionJsonSchema = zodToJsonSchema(ContextExtractionSchema, {
+                    $refStrategy: 'none'
+                });
+
+                // Use function calling with Zod-generated schema
+                const tools = [{
+                    type: 'function',
+                    function: {
+                        name: 'extract_context',
+                        description: 'Extract citations and facts from the document',
+                        parameters: extractionJsonSchema
+                    }
+                }];
+
+                const response = await fetch(`${apiBase}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: messages,
+                        temperature: 0,
+                        tools: tools,
+                        tool_choice: { type: 'function', function: { name: 'extract_context' } }
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(`API error: ${response.status} - ${error}`);
+                }
+
+                const data = await response.json();
+                const toolCall = data.choices[0].message.tool_calls[0];
+                const result = JSON.parse(toolCall.function.arguments);
+                
+                // Log extraction results
+                this.log(`Extracted ${result.citations?.length || 0} citations and ${result.facts?.length || 0} facts`, 'info');
+                
+                return result;
+            },
+
+            // Validate context (less strict)
+            validateContext(context, documentText) {
+                const validated = {
+                    reasoning: context.reasoning,
+                    citations: [],
+                    facts: [],
+                    stats: {
+                        totalCitations: context.citations ? context.citations.length : 0,
+                        exactCitations: 0,
+                        inexactCitations: 0,
+                        invalidCitations: 0,
+                        totalFacts: context.facts ? context.facts.length : 0,
+                        exactFacts: 0,
+                        inexactFacts: 0,
+                        invalidFacts: 0
+                    }
+                };
+
+                // Validate citations
+                if (context.citations && Array.isArray(context.citations)) {
+                    for (const citation of context.citations) {
+                        const validation = this.findInDocument(citation.text, documentText);
+                        const status = validation.found ? (validation.exact ? 'exact' : 'inexact') : 'invalid';
+                        
+                        validated.citations.push({
+                            ...citation,
+                            valid: validation.found,
+                            exact: validation.exact,
+                            status: status
+                        });
+                        
+                        if (status === 'exact') {
+                            validated.stats.exactCitations++;
+                        } else if (status === 'inexact') {
+                            validated.stats.inexactCitations++;
+                        } else {
+                            validated.stats.invalidCitations++;
+                        }
+                        
+                        // Log each citation validation
+                        this.log(`Citation ${validated.citations.length}: "${citation.text.substring(0, 50)}..." - ${status.toUpperCase()}`, status === 'invalid' ? 'warning' : 'info');
+                    }
+                }
+
+                // Validate facts
+                if (context.facts && Array.isArray(context.facts)) {
+                    for (const fact of context.facts) {
+                        const validation = this.findInDocument(fact.evidence, documentText);
+                        const status = validation.found ? (validation.exact ? 'exact' : 'inexact') : 'invalid';
+                        
+                        validated.facts.push({
+                            ...fact,
+                            valid: validation.found,
+                            exact: validation.exact,
+                            status: status
+                        });
+                        
+                        if (status === 'exact') {
+                            validated.stats.exactFacts++;
+                        } else if (status === 'inexact') {
+                            validated.stats.inexactFacts++;
+                        } else {
+                            validated.stats.invalidFacts++;
+                        }
+                        
+                        // Log each fact validation
+                        this.log(`Fact ${validated.facts.length}: "${fact.claim.substring(0, 50)}..." - ${status.toUpperCase()}`, status === 'invalid' ? 'warning' : 'info');
+                    }
+                }
+
+                this.log(`SUMMARY - Citations: ${validated.stats.exactCitations} exact, ${validated.stats.inexactCitations} inexact, ${validated.stats.invalidCitations} invalid`, 'info');
+                this.log(`SUMMARY - Facts: ${validated.stats.exactFacts} exact, ${validated.stats.inexactFacts} inexact, ${validated.stats.invalidFacts} invalid`, 'info');
+
+                return validated;
+            },
+
+            // Calculate quality score
+            calculateScore(context) {
+                const stats = context.stats;
+                
+                // Treat invalid as inexact for scoring purposes (more lenient)
+                const totalCitations = stats.totalCitations;
+                const totalFacts = stats.totalFacts;
+                
+                // Calculate exact match percentages
+                const exactCitationPercentage = totalCitations > 0 ? 
+                    (stats.exactCitations / totalCitations) * 100 : 0;
+                const exactFactPercentage = totalFacts > 0 ? 
+                    (stats.exactFacts / totalFacts) * 100 : 0;
+                
+                // Overall score: exact gets full weight, inexact gets 50%, invalid gets 25%
+                const citationScore = totalCitations > 0 ?
+                    (stats.exactCitations * 1.0 + stats.inexactCitations * 0.5 + stats.invalidCitations * 0.25) / totalCitations : 0;
+                const factScore = totalFacts > 0 ?
+                    (stats.exactFacts * 1.0 + stats.inexactFacts * 0.5 + stats.invalidFacts * 0.25) / totalFacts : 0;
+                
+                // Overall score (weighted average: 60% citations, 40% facts)
+                const overallScore = (citationScore * 0.6 + factScore * 0.4) * 100;
+                
+                return {
+                    overall: Math.round(overallScore),
+                    exactPercentage: Math.round(exactCitationPercentage),
+                    citations: Math.round(citationScore * 100),
+                    facts: Math.round(factScore * 100),
+                    exactCount: stats.exactCitations,
+                    inexactCount: stats.inexactCitations + stats.invalidCitations,
+                    exactCitations: stats.exactCitations,
+                    totalValidCitations: totalCitations,
+                    exactFacts: stats.exactFacts,
+                    totalValidFacts: totalFacts
+                };
+            },
+
+            // Generate answer
+            async generateAnswer(context, question, apiKey, apiBase, model) {
+                // Define Zod schema for answer generation
+                const AnswerSchema = z.object({
+                    answer: z.string().describe('Detailed answer using all relevant citations [C##] and facts [F##]. Be comprehensive and include all important information from the context.'),
+                    summary: z.string().describe('One concise paragraph (3-4 sentences) that directly answers the question using the extracted information above without references. Write a complete, standalone executive summary synthesizing the citations and facts.')
+                });
+
+                // Build context text including ALL citations (even invalid ones marked as unverified)
+                let contextText = '## EXTRACTED CONTEXT\n\n';
+                
+                contextText += `### Analysis\n${context.reasoning}\n\n`;
+                
+                contextText += '### Key Citations\n';
+                context.citations.forEach((c, i) => {
+                    const marker = c.status === 'exact' ? '' : (c.status === 'inexact' ? ' [INEXACT]' : ' [UNVERIFIED]');
+                    contextText += `[C${String(i+1).padStart(2, '0')}] "${c.text}"${marker}\n`;
+                    contextText += `      Relevance: ${c.relevance}\n\n`;
+                });
+                
+                contextText += '\n### Specific Facts\n';
+                context.facts.forEach((f, i) => {
+                    const marker = f.status === 'exact' ? '' : (f.status === 'inexact' ? ' [INEXACT]' : ' [UNVERIFIED]');
+                    contextText += `[F${String(i+1).padStart(2, '0')}] ${f.claim}${marker}\n`;
+                    contextText += `      Evidence: "${f.evidence}"\n`;
+                    contextText += `      Category: ${f.category}\n\n`;
+                });
+
+                const systemPrompt = `You are an expert analyst providing accurate answers based on extracted context.
+
+STRICT RULES:
+- Answer ONLY using information from the provided context
+- Cite sources using [C01], [F01] format for all claims
+- Include both exact and inexact citations (marked with [INEXACT])
+- If information is not in the context, state "Not provided in the context"
+- Be comprehensive but concise
+- Use bullet points or numbered lists for clarity when appropriate`;
+
+                const userPrompt = `${contextText}
+
+Question: ${question}
+
+Provide a detailed answer using the citations [C##] and facts [F##] above. Include all relevant information.`;
+
+                const messages = [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ];
+
+                // Convert Zod schema to JSON Schema for structured output
+                const answerJsonSchema = zodToJsonSchema(AnswerSchema, {
+                    $refStrategy: 'none'
+                });
+
+                // Use structured output with Zod-generated schema
+                const response = await fetch(`${apiBase}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: messages,
+                        response_format: {
+                            type: 'json_schema',
+                            json_schema: {
+                                name: 'answer_generation',
+                                strict: true,
+                                schema: answerJsonSchema
+                            }
+                        },
+                        temperature: 0.3,
+                        max_tokens: 1500
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(`API error: ${response.status} - ${error}`);
+                }
+
+                const data = await response.json();
+                const result = JSON.parse(data.choices[0].message.content);
+                
+                // Return formatted: summary first, then detailed answer
+                return result.summary + '\n\n' + result.answer;
+            },
+
+            // Display results
+            displayResults(context, answer, summary, score) {
+                // Display score - show exact percentage as main score
+                document.getElementById('scoreValue').textContent = `${score.exactPercentage}%`;
+                document.getElementById('scoreLabel').textContent = 'Exact Match Rate';
+                document.getElementById('exactCount').textContent = `${score.exactCitations}/${score.totalValidCitations} exact matches`;
+                document.getElementById('inexactCount').textContent = `${score.totalValidCitations - score.exactCitations} inexact matches`;
+                
+                // Update explanation
+                const inexactCount = score.totalValidCitations - score.exactCitations;
+                const explanation = `${score.exactCitations} of ${score.totalValidCitations} citations matched exactly (${score.exactPercentage}%). ` +
+                                  `${inexactCount > 0 ? `The remaining ${inexactCount} could not be verified exactly.` : ''}`;
+                document.getElementById('scoreExplanation').textContent = explanation;
+                
+                // Configure marked options for proper rendering
+                marked.setOptions({
+                    breaks: true,  // Convert \n to <br>
+                    gfm: true,     // GitHub Flavored Markdown
+                    headerIds: false,
+                    mangle: false
+                });
+                
+                // Display summary - render as markdown
+                const summaryHtml = marked.parse(summary || 'No summary available');
+                document.getElementById('answerSummary').innerHTML = summaryHtml;
+                
+                // Display detailed answer - render as markdown with citation highlighting
+                const answerWithHighlights = this.highlightCitations(answer);
+                const answerHtml = marked.parse(answerWithHighlights);
+                document.getElementById('answerDetailed').innerHTML = answerHtml;
+                
+                // Display citations - show ALL citations including invalid ones
+                const citationsList = document.getElementById('citationsList');
+                citationsList.innerHTML = '';
+                context.citations.forEach((c, i) => {
+                    // Show all citations, including invalid ones (in yellow)
+                    const item = document.createElement('div');
+                    const className = c.status === 'invalid' ? 'inexact' : (c.status === 'inexact' ? 'inexact' : '');
+                    item.className = `evidence-item ${className}`;
+                    item.innerHTML = `
+                        <div class="evidence-header">
+                            <span class="evidence-id">C${String(i+1).padStart(2, '0')}</span>
+                            <div class="evidence-status">
+                                <span class="status-badge ${c.status === 'invalid' ? 'inexact' : c.status}">${c.status.toUpperCase()}</span>
+                            </div>
+                        </div>
+                        <div class="evidence-text">"${c.text}"</div>
+                        <div class="evidence-relevance">${c.relevance}</div>
+                    `;
+                    citationsList.appendChild(item);
+                });
+                
+                // Display facts - show ALL facts including invalid ones
+                const factsList = document.getElementById('factsList');
+                factsList.innerHTML = '';
+                context.facts.forEach((f, i) => {
+                    // Show all facts, including invalid ones (in yellow)
+                    const item = document.createElement('div');
+                    const className = f.status === 'invalid' ? 'inexact' : (f.status === 'inexact' ? 'inexact' : '');
+                    item.className = `evidence-item fact ${className}`;
+                    item.innerHTML = `
+                        <div class="evidence-header">
+                            <span class="evidence-id">F${String(i+1).padStart(2, '0')}</span>
+                            <div class="evidence-status">
+                                <span class="status-badge ${f.status === 'invalid' ? 'inexact' : f.status}">${f.status.toUpperCase()}</span>
+                            </div>
+                        </div>
+                        <div class="evidence-text"><strong>${f.claim}</strong></div>
+                        <div class="evidence-text">"${f.evidence}"</div>
+                        <div class="evidence-meta">
+                            <span>Category: ${f.category}</span>
+                        </div>
+                    `;
+                    factsList.appendChild(item);
+                });
+                
+                // Update badges - show total counts
+                document.getElementById('citationsBadge').textContent = context.citations.length;
+                document.getElementById('factsBadge').textContent = context.facts.length;
+                
+                // Display context
+                document.getElementById('contextContent').textContent = this.formatContext(context);
+                
+                // Display logs
+                this.displayLogs();
+            },
+
+            // Highlight citations in text for markdown
+            highlightCitations(text) {
+                // Replace citation references with HTML badges that will survive markdown parsing
+                // Using HTML directly in markdown is supported
+                return text.replace(/\[([CF]\d{2})\]/g, '<span class="badge bg-primary">$1</span>');
+            },
+
+            // Format context for display
+            formatContext(context) {
+                let text = `REASONING:\n${context.reasoning}\n\n`;
+                
+                text += `CITATIONS (${context.stats.exactCitations} exact, ${context.stats.inexactCitations} inexact):\n`;
+                context.citations.forEach((c, i) => {
+                    if (c.status !== 'invalid') {
+                        const marker = c.status === 'exact' ? '✓' : '≈';
+                        text += `[C${String(i+1).padStart(2, '0')}] ${marker} "${c.text}"\n`;
+                        text += `      Relevance: ${c.relevance}\n\n`;
+                    }
+                });
+                
+                text += `\nFACTS (${context.stats.exactFacts} exact, ${context.stats.inexactFacts} inexact):\n`;
+                context.facts.forEach((f, i) => {
+                    if (f.status !== 'invalid') {
+                        const marker = f.status === 'exact' ? '✓' : '≈';
+                        text += `[F${String(i+1).padStart(2, '0')}] ${marker} ${f.claim}\n`;
+                        text += `      Evidence: "${f.evidence}"\n`;
+                    }
+                });
+                
+                return text;
+            },
+
+            // Display logs
+            displayLogs() {
+                const logsList = document.getElementById('logsList');
+                logsList.innerHTML = '';
+                
+                this.state.logs.forEach(log => {
+                    const item = document.createElement('div');
+                    item.className = `log-item ${log.type}`;
+                    item.innerHTML = `
+                        <span class="log-time">${log.time}</span>
+                        <span class="log-type ${log.type}">[${log.type}]</span>
+                        <span class="log-message">${log.message}</span>
+                    `;
+                    logsList.appendChild(item);
+                });
+                
+                // Auto-scroll to bottom
+                logsList.scrollTop = logsList.scrollHeight;
+            },
+
+            // Set progress step
+            setProgressStep(step) {
+                document.querySelectorAll('.progress-step').forEach(el => {
+                    el.classList.remove('active', 'completed');
+                });
+
+                const steps = ['extract', 'validate', 'answer'];
+                const currentIndex = steps.indexOf(step);
+                
+                steps.forEach((s, i) => {
+                    const el = document.querySelector(`[data-step="${s}"]`);
+                    if (i < currentIndex) {
+                        el.classList.add('completed');
+                    } else if (i === currentIndex) {
+                        el.classList.add('active');
+                    }
+                });
+
+                const messages = {
+                    extract: 'Extracting citations and facts...',
+                    validate: 'Validating extracted content...',
+                    answer: 'Generating comprehensive answer...'
+                };
+                document.getElementById('progressMessage').textContent = messages[step] || 'Processing...';
+            },
+
+            // Show/hide loading
+            showLoading(show, message = 'Processing...') {
+                const overlay = document.getElementById('loadingOverlay');
+                if (show) {
+                    overlay.classList.add('active');
+                    document.getElementById('loadingMessage').textContent = message;
+                } else {
+                    overlay.classList.remove('active');
+                }
+            },
+
+            // Log message
+            log(message, type = 'info') {
+                const time = new Date().toLocaleTimeString();
+                this.state.logs.push({ time, message, type });
+                console.log(`[${type}] ${message}`);
+            },
+
+            // Clear all
+            clear() {
+                document.getElementById('question').value = '';
+                document.getElementById('document').value = '';
+                document.getElementById('fileInput').value = '';
+                this.updateStats();
+                this.state = {
+                    document: '',
+                    question: '',
+                    context: null,
+                    answer: '',
+                    summary: '',
+                    logs: [],
+                    inputMinimized: false
+                };
+                document.getElementById('inputSection').classList.remove('minimized');
+                document.getElementById('progressSection').classList.remove('active');
+                document.getElementById('resultsSection').classList.remove('active');
+                document.getElementById('toggleSourceBtn').style.display = 'none';
+                this.log('Cleared all inputs', 'info');
+            },
+
+            // Copy answer
+            copyAnswer() {
+                // Build markdown content with all sections
+                let fullContent = `# Question\n${this.state.question}\n\n`;
+                fullContent += `## Summary\n${this.state.summary}\n\n`;
+                fullContent += `## Detailed Answer\n${this.state.answer}\n\n`;
+                
+                // Add citations
+                if (this.state.context && this.state.context.citations.length > 0) {
+                    fullContent += `## Citations\n\n`;
+                    this.state.context.citations.forEach((c, i) => {
+                        const status = c.status === 'exact' ? '✓' : c.status === 'inexact' ? '≈' : '⚠';
+                        fullContent += `### [C${String(i+1).padStart(2, '0')}] ${status}\n`;
+                        fullContent += `> ${c.text}\n\n`;
+                        fullContent += `*Relevance:* ${c.relevance}\n\n`;
+                    });
+                }
+                
+                // Add facts
+                if (this.state.context && this.state.context.facts.length > 0) {
+                    fullContent += `## Facts\n\n`;
+                    this.state.context.facts.forEach((f, i) => {
+                        const status = f.status === 'exact' ? '✓' : f.status === 'inexact' ? '≈' : '⚠';
+                        fullContent += `### [F${String(i+1).padStart(2, '0')}] ${status}\n`;
+                        fullContent += `**${f.claim}**\n\n`;
+                        fullContent += `> Evidence: ${f.evidence}\n\n`;
+                        fullContent += `*Category:* ${f.category}\n\n`;
+                    });
+                }
+                
+                navigator.clipboard.writeText(fullContent).then(() => {
+                    const btn = document.getElementById('copyAnswerBtn');
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copied!';
+                    btn.classList.add('btn-success');
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.classList.remove('btn-success');
+                    }, 2000);
+                }).catch(err => {
+                    this.log(`Failed to copy: ${err}`, 'error');
+                });
+            }
+        };
+
+        // Make app globally available
+        window.app = app;
+
+        // Initialize app when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+    </script>
+</body>
+</html>

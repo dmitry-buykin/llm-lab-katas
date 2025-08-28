@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Meeting Minutes Generator</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="data:application/manifest+json,{
+        &quot;name&quot;: &quot;Meeting Minutes Generator&quot;,
+        &quot;short_name&quot;: &quot;Minutes&quot;,
+        &quot;start_url&quot;: &quot;.&quot;,
+        &quot;display&quot;: &quot;standalone&quot;,
+        &quot;background_color&quot;: &quot;#ffffff&quot;,
+        &quot;theme_color&quot;: &quot;#0d6efd&quot;,
+        &quot;description&quot;: &quot;Generate structured meeting minutes from MS Teams transcripts&quot;,
+        &quot;icons&quot;: [
+            {
+                &quot;src&quot;: &quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📝%3C/text%3E%3C/svg%3E&quot;,
+                &quot;sizes&quot;: &quot;192x192&quot;,
+                &quot;type&quot;: &quot;image/svg+xml&quot;
+            }
+        ]
+    }">
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+    <!-- Prism for code highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    
+    <style>
+        /* Maersk Brand Colors - Light Modern Theme */
+        :root {
+            --maersk-blue: #42B0D5;
+            --maersk-dark-blue: #1F2937;
+            --maersk-light-blue: #F0F9FF;
+            --maersk-gray: #6B7280;
+            --maersk-dark-gray: #374151;
+            --maersk-light-gray: #F9FAFB;
+            --maersk-white: #FFFFFF;
+            --maersk-accent: #0EA5E9;
+            --maersk-success: #10B981;
+            --maersk-warning: #F59E0B;
+            --maersk-error: #EF4444;
+        }
+        
+        body { 
+            background: #FFFFFF;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            color: var(--maersk-dark-blue);
+        }
+        
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header-section {
+            text-align: center;
+            color: var(--maersk-dark-blue);
+            margin-bottom: 2rem;
+            padding: 3rem 2rem;
+            background: linear-gradient(180deg, #F0F9FF 0%, #FFFFFF 100%);
+            border-bottom: 1px solid rgba(66, 176, 213, 0.15);
+        }
+        
+        .header-section h1 {
+            font-size: 2.75rem;
+            font-weight: 200;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header-section p {
+            font-size: 1.125rem;
+            color: var(--maersk-gray);
+            font-weight: 300;
+        }
+        
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.06);
+            margin-bottom: 1.5rem;
+            transition: all 0.2s ease;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            transform: translateY(-2px);
+        }
+        
+        .card-header {
+            background: var(--maersk-light-gray);
+            color: var(--maersk-dark-blue);
+            border-radius: 0;
+            padding: 1.25rem 1.5rem;
+            font-weight: 500;
+            font-size: 1rem;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+        
+        .form-label {
+            font-weight: 500;
+            color: var(--maersk-gray);
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #E5E7EB;
+            transition: all 0.2s ease;
+            background: var(--maersk-white);
+            font-size: 0.95rem;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--maersk-blue);
+            box-shadow: 0 0 0 3px rgba(66, 176, 213, 0.1);
+            outline: none;
+        }
+        
+        textarea.form-control {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .btn {
+            border-radius: 8px;
+            padding: 0.75rem 2rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: none;
+            font-size: 0.95rem;
+        }
+        
+        .btn-primary {
+            background: var(--maersk-blue);
+            color: var(--maersk-white);
+        }
+        
+        .btn-primary:hover {
+            background: var(--maersk-accent);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66, 176, 213, 0.25);
+        }
+        
+        .btn-secondary {
+            background: var(--maersk-white);
+            color: var(--maersk-dark-blue);
+            border: 1px solid #E5E7EB;
+        }
+        
+        .btn-secondary:hover {
+            background: var(--maersk-light-gray);
+            border-color: #D1D5DB;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 3px solid var(--maersk-light-blue);
+            border-top: 3px solid var(--maersk-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .output-section {
+            background: var(--maersk-white);
+            border: 1px solid #E5E7EB;
+            border-radius: 0;
+            padding: 2rem;
+            max-height: 700px;
+            overflow-y: auto;
+        }
+        
+        .markdown-content {
+            line-height: 1.6;
+        }
+        
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .markdown-content table {
+            width: 100%;
+            margin: 1rem 0;
+        }
+        
+        .markdown-content th {
+            background-color: var(--maersk-dark-blue);
+            color: var(--maersk-white);
+            padding: 0.75rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+        }
+        
+        .markdown-content td {
+            padding: 0.5rem;
+            border: 1px solid #dee2e6;
+        }
+        
+        .speaker-stats {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .speaker-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .speaker-name {
+            min-width: 200px;
+            width: 200px;
+            font-weight: 600;
+            color: #495057;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .speaker-bar-fill {
+            height: 32px;
+            background: linear-gradient(90deg, var(--maersk-blue) 0%, #0EA5E9 100%);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            color: var(--maersk-white);
+            font-size: 0.875rem;
+            font-weight: 400;
+            box-shadow: 0 1px 2px rgba(66, 176, 213, 0.2);
+        }
+        
+        .focus-option {
+            border: 1px solid #E5E7EB;
+            border-radius: 10px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--maersk-white);
+        }
+        
+        .focus-option:hover {
+            border-color: #D1D5DB;
+            background: var(--maersk-light-gray);
+            transform: translateX(4px);
+        }
+        
+        .focus-option.selected {
+            border-color: var(--maersk-blue);
+            background: linear-gradient(90deg, rgba(66, 176, 213, 0.08) 0%, transparent 100%);
+            box-shadow: inset 4px 0 0 0 var(--maersk-blue);
+        }
+        
+        .focus-option h6 {
+            color: var(--maersk-dark-blue);
+            font-weight: 500;
+        }
+        
+        .preprocessing-status {
+            display: none;
+            padding: 1.5rem;
+            background: var(--maersk-light-blue);
+            border-left: 4px solid var(--maersk-blue);
+            margin-top: 1rem;
+        }
+        
+        .preprocessing-status.active {
+            display: block;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+        
+        .status-icon.complete {
+            background: var(--maersk-success);
+        }
+        
+        .status-icon.processing {
+            background: var(--maersk-warning);
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Maersk-specific form styling */
+        input[type="password"]:placeholder-shown {
+            background-color: var(--maersk-light-blue);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--maersk-light-gray);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--maersk-gray);
+            border-radius: 0;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--maersk-dark-gray);
+        }
+        
+        .copy-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            z-index: 10;
+        }
+        
+        .toast-container {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 10000;
+        }
+        
+        .toast {
+            background: var(--maersk-white);
+            border-radius: 0;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s ease;
+            border-left: 4px solid var(--maersk-blue);
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .file-drop-zone {
+            border: 2px dashed var(--maersk-blue);
+            border-radius: 0;
+            padding: 3rem 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: var(--maersk-white);
+        }
+        
+        .file-drop-zone:hover, .file-drop-zone.dragover {
+            background: var(--maersk-light-blue);
+            border-color: var(--maersk-dark-blue);
+            border-style: solid;
+        }
+        
+        .file-drop-zone h5 {
+            color: var(--maersk-dark-blue);
+            font-weight: 400;
+        }
+        
+        .file-drop-zone .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-overlay" class="loading-overlay d-none">
+        <div class="spinner"></div>
+        <div id="loading-message" class="text-center">
+            <h5 class="mb-2">Processing...</h5>
+            <p class="text-muted" id="loading-details"></p>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="main-container">
+        <div class="header-section">
+            <h1>Meeting Minutes Generator</h1>
+            <p>Transform your MS Teams transcripts into structured, actionable meeting minutes</p>
+        </div>
+
+        <!-- Configuration Card (Minimal for business use) -->
+        <div class="card">
+            <div class="card-header">
+                API Configuration
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="apiKey" class="form-label">API Key</label>
+                        <input type="password" class="form-control" id="apiKey" placeholder="Enter your LLM API Key" required>
+                        <div class="form-text">Stored securely in browser local storage</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="apiEndpoint" class="form-label">LLM Proxy Endpoint</label>
+                        <input type="text" class="form-control" id="apiEndpoint" placeholder="https://api.openai.com">
+                        <div class="form-text">OpenAI-compatible API endpoint</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="model" class="form-label">Model</label>
+                        <input type="text" class="form-control" id="model" placeholder="gpt-4.1-mini" value="gpt-4.1-mini">
+                        <div class="form-text">Model name (e.g., gpt-4.1-mini, gpt-4)</div>
+                    </div>
+                    <!-- Hidden advanced configuration -->
+                    <div style="display: none;">
+                        <input type="number" id="temperature" value="0.1">
+                        <select id="language">
+                            <option value="en" selected>English</option>
+                            <option value="auto">Same as Transcript</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Card -->
+        <div class="card">
+            <div class="card-header">
+                Upload Meeting Transcript
+            </div>
+            <div class="card-body">
+                <div class="file-drop-zone" id="file-drop-zone">
+                    <div class="icon" style="color: var(--maersk-blue); font-size: 3rem;">⬆</div>
+                    <h5>Drop your file here or click to browse</h5>
+                    <p class="text-muted">Supports: .vtt (MS Teams transcript), .docx (Meeting notes), .txt</p>
+                    <input type="file" id="file-input" class="d-none" accept=".vtt,.docx,.txt,.md">
+                </div>
+                
+                <div class="preprocessing-status" id="preprocessing-status">
+                    <h6 class="mb-3">Preprocessing Status:</h6>
+                    <div class="status-item">
+                        <div class="status-icon" id="status-file"></div>
+                        <span>File loaded: <strong id="file-name"></strong></span>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-icon" id="status-speakers"></div>
+                        <span>Speakers detected: <strong id="speakers-count">0</strong></span>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-icon" id="status-duration"></div>
+                        <span>Duration: <strong id="meeting-duration">--</strong></span>
+                    </div>
+                </div>
+
+                <!-- Focus Selection -->
+                <div class="mt-4 d-none" id="focus-section">
+                    <h5 class="mb-3">Select Processing Focus:</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="focus-option" data-focus="balanced">
+                                <h6>Balanced</h6>
+                                <p class="text-muted mb-0">Standard meeting minutes with equal focus on all topics and speakers</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="focus-option" data-focus="decisions">
+                                <h6>Decision-Focused</h6>
+                                <p class="text-muted mb-0">Emphasize decisions, action items, and responsibilities</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="focus-option" data-focus="technical">
+                                <h6>Technical Details</h6>
+                                <p class="text-muted mb-0">Focus on technical discussions, problems, and solutions</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label for="custom-focus" class="form-label">Or specify custom focus:</label>
+                        <input type="text" class="form-control" id="custom-focus" 
+                               placeholder="e.g., Focus on budget discussions and financial decisions">
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button class="btn btn-primary btn-lg d-none" id="process-button">
+                        Generate Meeting Minutes
+                    </button>
+                    <button class="btn btn-secondary ms-2 d-none" id="clear-button">
+                        Clear All
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Speaker Statistics Card -->
+        <div class="card d-none" id="speaker-stats-card">
+            <div class="card-header">
+                Speaker Statistics
+            </div>
+            <div class="card-body">
+                <div id="speaker-stats" class="speaker-stats"></div>
+            </div>
+        </div>
+
+        <!-- Output Card -->
+        <div class="card d-none" id="output-card">
+            <div class="card-header">
+                Generated Meeting Minutes
+                <button class="btn btn-sm btn-light copy-button" id="copy-button" style="background: var(--maersk-white); color: var(--maersk-dark-blue); border: 1px solid var(--maersk-blue);">
+                    Copy as Markdown
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="output-section" class="output-section">
+                    <div id="markdown-output" class="markdown-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.7.0/mammoth.browser.min.js"></script>
+    
+    <!-- Main Application Script -->
+    <script type="module">
+        import { z } from 'https://esm.sh/zod@3.23.8';
+        import { zodToJsonSchema } from 'https://esm.sh/zod-to-json-schema@3.23.0';
+
+        // Define the schema for structured meeting minutes using Zod - matching Python models.py
+        const ProtocolItem = z.object({
+            content: z.string().describe("The exact statement or point as said in the meeting")
+        });
+        
+        const QAItem = z.object({
+            question: z.string().describe("Exact question asked by a participant"),
+            answer: z.string().describe("Exact answer given to that question")
+        });
+        
+        const MinutesResponseSchema = z.object({
+            meeting_goals: z.array(ProtocolItem)
+                .min(2).max(5)
+                .describe("Extract all meeting objectives and purposes. What outcomes were planned to be achieved? Which topics were scheduled for discussion? Include both primary and secondary objectives mentioned at the beginning or throughout the meeting."),
+            
+            established_facts: z.array(ProtocolItem)
+                .max(10)
+                .describe("Document all confirmed facts, data points, and information that participants presented, discussed, or verified during the meeting. Include statistics, project updates, status reports, and any factual statements acknowledged by the participants."),
+            
+            existing_issues: z.array(ProtocolItem)
+                .max(10)
+                .describe("Identify and list all problems, challenges, issues, obstacles, or concerns raised by participants. Include technical difficulties, resource constraints, timeline issues, and any other impediments discussed during the meeting."),
+            
+            decisions_made: z.array(ProtocolItem)
+                .min(1).max(10)
+                .describe("Capture all decisions reached by participants, including formal resolutions, informal agreements, chosen alternatives, and consensus points. Document both major strategic decisions and minor operational choices made during the discussion."),
+            
+            tasks_to_execute: z.array(ProtocolItem)
+                .max(10)
+                .describe("List all action items and tasks assigned for execution, including responsible parties and deadlines when explicitly mentioned in the transcript. Important: Only include assignees and deadlines that were explicitly stated. Never use placeholder text like 'Not specified' or 'TBD'."),
+            
+            qa_items: z.array(QAItem)
+                .min(3).max(20)
+                .describe("Analyze the meeting transcript to identify all questions asked and their corresponding answers. Focus on substantive questions related to the meeting topics and business matters. Exclude trivial technical setup questions such as 'Can you see my screen?', 'Can you hear me?', or other momentary technical clarifications that don't contribute to the meeting content."),
+            
+            open_questions: z.array(ProtocolItem)
+                .max(5)
+                .describe("Document all unresolved questions, pending issues, or topics that remain unanswered or require further discussion in future meetings. Include questions that were asked but not fully addressed, as well as issues explicitly marked for follow-up."),
+            
+            meeting_title: z.string()
+                .describe("Descriptive meeting title summarizing primary topic (max 40 characters)")
+        });
+
+        /**
+         * MeetingMinutesApp - Enterprise-grade AI-powered meeting transcript processor
+         * 
+         * This application processes meeting transcripts from various sources (MS Teams, Zoom, etc.)
+         * and generates structured meeting minutes using OpenAI-compatible APIs.
+         * 
+         * Key Features:
+         * - Multi-format support: DOCX (MS Teams export), VTT (WebVTT subtitles), TXT
+         * - Speaker identification and statistics (duration, word count, dominance)
+         * - Structured output following business meeting standards
+         * - Focus modes for different meeting types (balanced, technical, decision-focused)
+         * - Automatic date extraction from transcripts
+         * - Export to Markdown format for easy sharing
+         * 
+         * Architecture:
+         * - Uses Zod for schema validation and structured output
+         * - Implements OpenAI function calling for reliable extraction
+         * - Client-side processing for privacy and security
+         * - Local storage for settings persistence
+         */
+        class MeetingMinutesApp {
+            constructor() {
+                // Application state management
+                this.state = {
+                    fileContent: null,
+                    fileName: null,
+                    fileType: null,
+                    speakerStats: {},
+                    processedTranscript: null,
+                    selectedFocus: 'balanced',
+                    meetingDate: null,
+                    rawMinutesMarkdown: ''
+                };
+                
+                this.init();
+            }
+
+            init() {
+                this.bindElements();
+                this.loadSettings();
+                this.loadQueryParams();
+                this.attachEventListeners();
+                this.setupDragAndDrop();
+            }
+            
+            // Load optional settings from URL query parameters
+            loadQueryParams() {
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    
+                    // Check for optional API configuration in query params
+                    const apiBase = params.get('api_base');
+                    const apiKey = params.get('api_key');
+                    const model = params.get('model');
+                    
+                    // Only override if parameter is provided
+                    if (apiBase) {
+                        this.elements.apiEndpoint.value = decodeURIComponent(apiBase);
+                        console.log('Loaded API Base from URL:', apiBase);
+                    }
+                    
+                    if (apiKey) {
+                        this.elements.apiKey.value = decodeURIComponent(apiKey);
+                        console.log('Loaded API Key from URL (hidden)');
+                    }
+                    
+                    if (model) {
+                        this.elements.model.value = decodeURIComponent(model);
+                        console.log('Loaded Model from URL:', model);
+                    }
+                    
+                    // Save to localStorage if any params were provided
+                    if (apiBase || apiKey || model) {
+                        this.saveSettings();
+                        console.log('Query parameters saved to localStorage');
+                    }
+                } catch (error) {
+                    console.warn('Error loading query parameters:', error);
+                    // Continue with normal initialization
+                }
+            }
+
+            bindElements() {
+                this.elements = {
+                    // Config
+                    apiKey: document.getElementById('apiKey'),
+                    apiEndpoint: document.getElementById('apiEndpoint'),
+                    model: document.getElementById('model'),
+                    temperature: document.getElementById('temperature'),
+                    language: document.getElementById('language'),
+                    
+                    // File handling
+                    fileInput: document.getElementById('file-input'),
+                    fileDropZone: document.getElementById('file-drop-zone'),
+                    preprocessingStatus: document.getElementById('preprocessing-status'),
+                    fileName: document.getElementById('file-name'),
+                    speakersCount: document.getElementById('speakers-count'),
+                    meetingDuration: document.getElementById('meeting-duration'),
+                    
+                    // Focus
+                    focusSection: document.getElementById('focus-section'),
+                    customFocus: document.getElementById('custom-focus'),
+                    
+                    // Buttons
+                    processButton: document.getElementById('process-button'),
+                    clearButton: document.getElementById('clear-button'),
+                    copyButton: document.getElementById('copy-button'),
+                    
+                    // Output
+                    speakerStatsCard: document.getElementById('speaker-stats-card'),
+                    speakerStats: document.getElementById('speaker-stats'),
+                    outputCard: document.getElementById('output-card'),
+                    markdownOutput: document.getElementById('markdown-output'),
+                    
+                    // Loading
+                    loadingOverlay: document.getElementById('loading-overlay'),
+                    loadingDetails: document.getElementById('loading-details')
+                };
+
+                // Status icons
+                this.statusIcons = {
+                    file: document.getElementById('status-file'),
+                    speakers: document.getElementById('status-speakers'),
+                    duration: document.getElementById('status-duration')
+                };
+            }
+
+            /**
+             * Load application settings from localStorage
+             * Uses 'aicc' prefix for namespace isolation
+             */
+            loadSettings() {
+                this.elements.apiKey.value = localStorage.getItem('aiccApiKey') || '';
+                this.elements.apiEndpoint.value = localStorage.getItem('aiccApiEndpoint') || 'https://api.openai.com';
+                this.elements.model.value = localStorage.getItem('aiccModel') || 'gpt-4.1-mini';
+                this.elements.temperature.value = '0.1'; // Fixed for business consistency
+                this.elements.language.value = localStorage.getItem('aiccLanguage') || 'en';
+            }
+
+            /**
+             * Save application settings to localStorage
+             * Temperature is fixed at 0.1 for consistency
+             */
+            saveSettings() {
+                localStorage.setItem('aiccApiKey', this.elements.apiKey.value);
+                localStorage.setItem('aiccApiEndpoint', this.elements.apiEndpoint.value);
+                localStorage.setItem('aiccModel', this.elements.model.value);
+                // Temperature fixed at 0.1, not saved
+                localStorage.setItem('aiccLanguage', this.elements.language.value);
+            }
+
+            attachEventListeners() {
+                // Settings auto-save
+                ['apiKey', 'apiEndpoint', 'model', 'temperature', 'language'].forEach(key => {
+                    this.elements[key].addEventListener('change', () => this.saveSettings());
+                });
+
+                // File handling
+                this.elements.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+                this.elements.fileDropZone.addEventListener('click', () => this.elements.fileInput.click());
+
+                // Focus options
+                document.querySelectorAll('.focus-option').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        document.querySelectorAll('.focus-option').forEach(o => o.classList.remove('selected'));
+                        option.classList.add('selected');
+                        this.state.selectedFocus = option.dataset.focus;
+                        this.elements.customFocus.value = '';
+                    });
+                });
+
+                this.elements.customFocus.addEventListener('input', () => {
+                    document.querySelectorAll('.focus-option').forEach(o => o.classList.remove('selected'));
+                    this.state.selectedFocus = 'custom';
+                });
+
+                // Buttons
+                this.elements.processButton.addEventListener('click', () => this.processTranscript());
+                this.elements.clearButton.addEventListener('click', () => this.clearAll());
+                this.elements.copyButton.addEventListener('click', () => this.copyMarkdown());
+            }
+
+            setupDragAndDrop() {
+                const zone = this.elements.fileDropZone;
+                
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    zone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                });
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    zone.addEventListener(eventName, () => zone.classList.add('dragover'));
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    zone.addEventListener(eventName, () => zone.classList.remove('dragover'));
+                });
+
+                zone.addEventListener('drop', (e) => {
+                    const files = e.dataTransfer.files;
+                    if (files.length) this.handleFileSelect({ target: { files } });
+                });
+            }
+
+            async handleFileSelect(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const extension = file.name.split('.').pop().toLowerCase();
+                this.showLoading(true, `Reading ${file.name}...`);
+                
+                try {
+                    this.state.fileName = file.name;
+                    this.state.fileType = extension;
+                    
+                    // Read file content based on type
+                    let content = '';
+                    switch (extension) {
+                        case 'txt':
+                        case 'md':
+                            content = await this.readTextFile(file);
+                            break;
+                        case 'docx':
+                            content = await this.readDocxFile(file);
+                            break;
+                        case 'vtt':
+                            content = await this.readVttFile(file);
+                            break;
+                        default:
+                            throw new Error(`Unsupported file type: .${extension}`);
+                    }
+                    
+                    this.state.fileContent = content;
+                    
+                    // Preprocess the transcript
+                    await this.preprocessTranscript(content, extension);
+                    
+                    // Update UI
+                    this.elements.preprocessingStatus.classList.add('active');
+                    this.elements.fileName.textContent = file.name;
+                    this.statusIcons.file.classList.add('complete');
+                    
+                    this.elements.focusSection.classList.remove('d-none');
+                    this.elements.processButton.classList.remove('d-none');
+                    this.elements.clearButton.classList.remove('d-none');
+                    
+                    // Auto-select balanced focus
+                    document.querySelector('[data-focus="balanced"]').click();
+                    
+                    this.showToast('File loaded successfully!', 'success');
+                } catch (error) {
+                    this.showToast(`Error reading file: ${error.message}`, 'error');
+                    console.error('File reading error:', error);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            async readTextFile(file) {
+                return await file.text();
+            }
+
+            async readDocxFile(file) {
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await mammoth.extractRawText({ arrayBuffer });
+                return result.value;
+            }
+
+            /**
+             * Parse WebVTT subtitle files (MS Teams export format)
+             * Extracts speaker information from <v Speaker> tags
+             * Calculates duration for each speaking turn
+             * @param {File} file - VTT file to parse
+             * @returns {Promise<string>} Formatted transcript with speaker durations
+             */
+            async readVttFile(file) {
+                const text = await file.text();
+                return this.parseVttWithSpeakers(text);
+            }
+
+            parseVttWithSpeakers(vttContent) {
+                const lines = vttContent.split('\n');
+                const captions = [];
+                let currentCaption = null;
+                let inCaptionText = false;
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    
+                    // Skip WEBVTT header
+                    if (line === 'WEBVTT') continue;
+                    
+                    // Skip empty lines when not in caption text
+                    if (!line && !inCaptionText) continue;
+                    
+                    // Check for timestamp line
+                    if (line.includes('-->')) {
+                        // Save previous caption if exists
+                        if (currentCaption && currentCaption.text) {
+                            // Final cleanup of speaker tags
+                            const speakerMatch = currentCaption.text.match(/<v ([^>]+)>([\s\S]*?)<\/v>/);
+                            if (speakerMatch) {
+                                currentCaption.speaker = speakerMatch[1].trim();
+                                currentCaption.text = speakerMatch[2].trim();
+                            } else {
+                                currentCaption.text = currentCaption.text.replace(/<\/?v[^>]*>/g, '').trim();
+                            }
+                            captions.push(currentCaption);
+                        }
+                        
+                        const times = line.split('-->').map(t => t.trim());
+                        currentCaption = {
+                            start: this.parseVttTime(times[0]),
+                            end: this.parseVttTime(times[1]),
+                            text: '',
+                            speaker: null
+                        };
+                        inCaptionText = true;
+                        continue;
+                    }
+                    
+                    // Handle empty line - marks end of caption
+                    if (!line && inCaptionText) {
+                        inCaptionText = false;
+                        continue;
+                    }
+                    
+                    // Skip cue identifiers (lines before timestamps)
+                    if (!inCaptionText && !currentCaption) continue;
+                    
+                    // If we're in caption text, accumulate it
+                    if (inCaptionText && currentCaption) {
+                        // Skip if this looks like a caption ID
+                        if (line.match(/^[\w-]+\/[\d-]+$/)) continue;
+                        
+                        // Add text to current caption
+                        if (currentCaption.text) {
+                            currentCaption.text += ' ';
+                        }
+                        currentCaption.text += line;
+                    }
+                }
+                
+                // Don't forget the last caption
+                if (currentCaption && currentCaption.text) {
+                    // Final cleanup of speaker tags
+                    const speakerMatch = currentCaption.text.match(/<v ([^>]+)>([\s\S]*?)<\/v>/);
+                    if (speakerMatch) {
+                        currentCaption.speaker = speakerMatch[1].trim();
+                        currentCaption.text = speakerMatch[2].trim();
+                    } else {
+                        currentCaption.text = currentCaption.text.replace(/<\/?v[^>]*>/g, '').trim();
+                    }
+                    captions.push(currentCaption);
+                }
+                
+                // Process captions to create transcript with speaker statistics
+                this.processSpeakerStatistics(captions);
+                
+                // Format transcript with timestamps
+                return this.formatTranscriptWithTimestamps(captions);
+            }
+
+            parseVttTime(timeStr) {
+                const parts = timeStr.split(':');
+                const seconds = parseFloat(parts[2]);
+                const minutes = parseInt(parts[1]);
+                const hours = parseInt(parts[0]);
+                return hours * 3600 + minutes * 60 + seconds;
+            }
+
+            /**
+             * Calculate comprehensive speaker statistics
+             * Tracks duration, word count, and participation percentage
+             * Used to identify meeting dominance and participation patterns
+             * @param {Array} captions - Parsed caption objects with speaker info
+             */
+            processSpeakerStatistics(captions) {
+                const stats = {};
+                let currentSpeaker = null;
+                
+                captions.forEach(caption => {
+                    // Update current speaker if caption has a speaker tag
+                    if (caption.speaker) {
+                        currentSpeaker = caption.speaker;
+                    }
+                    
+                    // Process caption if we have a current speaker (either from this caption or previous)
+                    if (currentSpeaker) {
+                        if (!stats[currentSpeaker]) {
+                            stats[currentSpeaker] = {
+                                duration: 0,
+                                segments: 0,
+                                words: 0
+                            };
+                        }
+                        
+                        const duration = caption.end - caption.start;
+                        const words = caption.text.split(/\s+/).filter(w => w.length > 0).length;
+                        
+                        stats[currentSpeaker].duration += duration;
+                        stats[currentSpeaker].segments += 1;
+                        stats[currentSpeaker].words += words;
+                    }
+                });
+                
+                // Convert to sorted array
+                const sortedStats = Object.entries(stats)
+                    .map(([speaker, data]) => ({
+                        speaker,
+                        duration: data.duration,
+                        durationMinutes: Math.round(data.duration / 60 * 10) / 10,
+                        segments: data.segments,
+                        words: data.words,
+                        percentage: 0
+                    }))
+                    .sort((a, b) => b.duration - a.duration);
+                
+                // Calculate percentages
+                const totalDuration = sortedStats.reduce((sum, s) => sum + s.duration, 0);
+                sortedStats.forEach(s => {
+                    s.percentage = Math.round(s.duration / totalDuration * 100 * 10) / 10;
+                });
+                
+                this.state.speakerStats = sortedStats;
+                
+                // Update UI
+                this.elements.speakersCount.textContent = sortedStats.length;
+                this.statusIcons.speakers.classList.add('complete');
+                
+                const totalMinutes = Math.round(totalDuration / 60);
+                this.elements.meetingDuration.textContent = `${totalMinutes} minutes`;
+                this.statusIcons.duration.classList.add('complete');
+                
+                this.displaySpeakerStatistics(sortedStats);
+            }
+
+            formatTranscriptWithTimestamps(captions) {
+                let transcript = '';
+                let currentSpeaker = null;
+                let speakerText = [];
+                let speakerStartTime = null;
+                let speakerEndTime = null;
+                
+                captions.forEach((caption, idx) => {
+                    if (caption.speaker && caption.speaker !== currentSpeaker) {
+                        // Save previous speaker's text with duration
+                        if (currentSpeaker && speakerText.length > 0 && speakerEndTime !== null) {
+                            const duration = speakerEndTime - speakerStartTime;
+                            const durationStr = this.formatDuration(duration);
+                            transcript += `\n${currentSpeaker} [${durationStr}]: ${speakerText.join(' ')}\n`;
+                        }
+                        
+                        // Start new speaker
+                        currentSpeaker = caption.speaker;
+                        speakerStartTime = caption.start;
+                        speakerEndTime = caption.end;
+                        speakerText = [caption.text];
+                    } else if (caption.speaker === currentSpeaker) {
+                        // Continue current speaker
+                        speakerText.push(caption.text);
+                        speakerEndTime = caption.end;
+                    } else if (!caption.speaker && currentSpeaker) {
+                        // No speaker in caption but we have a current speaker - continue with them
+                        speakerText.push(caption.text);
+                        speakerEndTime = caption.end;
+                    } else if (!caption.speaker && !currentSpeaker) {
+                        // No speaker identified at all - just add text
+                        transcript += `\n${caption.text}\n`;
+                    }
+                });
+                
+                // Don't forget the last speaker
+                if (currentSpeaker && speakerText.length > 0 && speakerEndTime !== null) {
+                    const duration = speakerEndTime - speakerStartTime;
+                    const durationStr = this.formatDuration(duration);
+                    transcript += `\n${currentSpeaker} [${durationStr}]: ${speakerText.join(' ')}\n`;
+                }
+                
+                return transcript;
+            }
+
+            formatTime(seconds) {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                if (hours > 0) {
+                    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                }
+                return `${minutes.toString().padStart(2, '0')}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
+            }
+
+            formatDuration(seconds) {
+                const totalSeconds = Math.floor(seconds);
+                if (totalSeconds < 60) {
+                    return `${totalSeconds}s`;
+                } else {
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const secs = totalSeconds % 60;
+                    if (secs === 0) {
+                        return `${minutes}min`;
+                    } else {
+                        return `${minutes}min ${secs}s`;
+                    }
+                }
+            }
+
+            displaySpeakerStatistics(stats) {
+                if (!stats || stats.length === 0) return;
+                
+                // Filter to top 10 speakers with at least 1 minute
+                const filteredStats = stats
+                    .slice(0, 10)  // Top 10
+                    .filter(stat => stat.durationMinutes >= 1.0);  // At least 1 minute
+                
+                if (filteredStats.length === 0) return;
+                
+                this.elements.speakerStatsCard.classList.remove('d-none');
+                
+                const maxDuration = Math.max(...filteredStats.map(s => s.duration));
+                
+                let html = '';
+                filteredStats.forEach(stat => {
+                    const barWidth = (stat.duration / maxDuration) * 100;
+                    html += `
+                        <div class="speaker-bar">
+                            <div class="speaker-name">${stat.speaker}</div>
+                            <div style="flex-grow: 1; margin: 0 1rem; display: flex; align-items: center;">
+                                <div style="flex-grow: 1; position: relative;">
+                                    <div class="speaker-bar-fill" style="width: ${barWidth}%">
+                                        ${barWidth > 30 ? `${stat.durationMinutes} min (${stat.percentage}%)` : '&nbsp;'}
+                                    </div>
+                                </div>
+                                <span style="margin-left: 0.5rem; font-size: 0.875rem; color: var(--maersk-gray); min-width: 100px;">
+                                    ${stat.durationMinutes} min (${stat.percentage}%)
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                this.elements.speakerStats.innerHTML = html;
+            }
+
+            async preprocessTranscript(content, fileType) {
+                this.state.processedTranscript = content;
+                
+                // Extract meeting date
+                this.state.meetingDate = this.extractMeetingDate(content, this.state.fileName);
+                
+                // For VTT files, we already processed speakers
+                if (fileType !== 'vtt') {
+                    // For other formats, try to identify speakers by patterns
+                    this.identifySpeakersFromText(content);
+                }
+            }
+
+            extractMeetingDate(content, fileName) {
+                // Try to extract from content first
+                const datePatterns = [
+                    /(\d{4}-\d{2}-\d{2})/,
+                    /(\d{1,2}\/\d{1,2}\/\d{4})/,
+                    /(\w+ \d{1,2}, \d{4})/
+                ];
+                
+                for (const pattern of datePatterns) {
+                    const match = content.match(pattern);
+                    if (match) {
+                        return match[1];
+                    }
+                }
+                
+                // Try filename
+                for (const pattern of datePatterns) {
+                    const match = fileName.match(pattern);
+                    if (match) {
+                        return match[1];
+                    }
+                }
+                
+                // Default to today
+                return new Date().toISOString().split('T')[0];
+            }
+
+            identifySpeakersFromText(content) {
+                // Simple pattern matching for speaker identification
+                const speakerPattern = /^([A-Z][a-z]+ [A-Z][a-z]+):/gm;
+                const speakers = new Set();
+                let match;
+                
+                while ((match = speakerPattern.exec(content)) !== null) {
+                    speakers.add(match[1]);
+                }
+                
+                if (speakers.size > 0) {
+                    this.elements.speakersCount.textContent = speakers.size;
+                    this.statusIcons.speakers.classList.add('complete');
+                }
+            }
+
+            async processTranscript() {
+                if (!this.state.processedTranscript) {
+                    this.showToast('Please upload a transcript file first', 'error');
+                    return;
+                }
+                
+                const apiKey = this.elements.apiKey.value;
+                if (!apiKey) {
+                    this.showToast('Please enter your API key', 'error');
+                    return;
+                }
+                
+                this.showLoading(true, 'Generating meeting minutes...');
+                
+                try {
+                    // Prepare the focus instruction
+                    let focusInstruction = '';
+                    if (this.state.selectedFocus === 'custom' && this.elements.customFocus.value) {
+                        focusInstruction = `\n\nFOCUS: ${this.elements.customFocus.value}`;
+                    } else if (this.state.selectedFocus === 'decisions') {
+                        focusInstruction = '\n\nFOCUS: Emphasize decisions made, action items assigned, and responsibilities. Be very specific about who is responsible for what.';
+                    } else if (this.state.selectedFocus === 'technical') {
+                        focusInstruction = '\n\nFOCUS: Pay special attention to technical discussions, problems identified, solutions proposed, and technical decisions made.';
+                    }
+                    
+                    // Prepare speaker context
+                    let speakerContext = '';
+                    if (this.state.speakerStats && this.state.speakerStats.length > 0) {
+                        const topSpeakers = this.state.speakerStats.slice(0, 5);
+                        
+                        // Calculate total meeting duration
+                        const totalMinutes = this.state.speakerStats.reduce((sum, s) => sum + s.durationMinutes, 0);
+                        
+                        speakerContext = `\n\nMEETING PARTICIPANTS (Total duration: ${totalMinutes.toFixed(1)} minutes):\n\n`;
+                        speakerContext += 'Top 5 speakers by time:\n';
+                        topSpeakers.forEach((s, index) => {
+                            // Determine when speaker dominated
+                            let dominance = '';
+                            if (s.percentage >= 70) {  // If speaker talked 70%+ of the time
+                                dominance = ' - dominated throughout';
+                            } else if (s.percentage >= 40) {  // Main presenter
+                                dominance = ' - main presenter';
+                            }
+                            
+                            speakerContext += `${index + 1}. ${s.speaker}: ${s.durationMinutes} minutes (${s.percentage}% of meeting)${dominance}\n`;
+                        });
+                    }
+                    
+                    // Call the API
+                    const minutes = await this.callStructuredAPI(
+                        this.state.processedTranscript,
+                        focusInstruction,
+                        speakerContext
+                    );
+                    
+                    // Format and display the output
+                    const markdown = this.formatMinutesToMarkdown(minutes);
+                    this.displayOutput(markdown);
+                    
+                    this.showToast('Meeting minutes generated successfully!', 'success');
+                } catch (error) {
+                    console.error('Processing error:', error);
+                    this.showToast(`Error: ${error.message}`, 'error');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            /**
+             * Call OpenAI-compatible API with structured output
+             * Uses function calling to ensure consistent schema compliance
+             * Implements Zod validation for response structure
+             * @param {string} transcript - Processed meeting transcript
+             * @param {string} focusInstruction - Additional focus guidance
+             * @param {string} speakerContext - Speaker statistics context
+             * @returns {Promise<Object>} Structured meeting minutes
+             */
+            async callStructuredAPI(transcript, focusInstruction, speakerContext) {
+                const baseUrl = this.elements.apiEndpoint.value || 'https://api.openai.com';
+                const endpoint = new URL('/v1/chat/completions', baseUrl).href;
+                
+                // Use the exact same system prompt as Python version
+                const SYSTEM_MESSAGE = `You are a meeting minutes specialist analyzing a transcript.
+
+YOUR TASK: Extract information from the transcript to fill each required field.
+
+STRICT RULES:
+1. ONLY use information directly stated in the transcript
+2. NEVER invent or guess information
+3. If information is missing, leave that field empty
+4. Quote or closely paraphrase what was actually said
+
+PRIORITIZATION:
+- Each field has a maximum number of items (max_length in schema)
+- When there are many possible items, prioritize the MOST DISCUSSED and IMPORTANT ones
+- Select items based on: time spent discussing, number of participants involved, and strategic importance
+- For goals: Focus on main objectives, not minor administrative items
+- For facts: Highlight key findings and significant data points
+- For issues: Emphasize critical problems that received substantial discussion
+- For decisions: Capture major resolutions and consensus points
+- For tasks: Include high-priority action items with clear owners
+
+PROCESS:
+1. Read the entire transcript first
+2. Identify the most significant topics based on discussion time and participation
+3. For each field, select the most important items within the max_length limit
+4. Extract facts, decisions, and actions as stated
+5. Be selective and focus on substance over minor details
+
+Remember: Quality over quantity - it's better to capture 5 important items than 10 trivial ones.`;
+
+                const systemPrompt = SYSTEM_MESSAGE + focusInstruction;
+
+                const userPrompt = `Meeting Date: ${this.state.meetingDate || 'Today'}${speakerContext}
+
+TRANSCRIPT:
+${transcript}
+
+Please extract structured meeting minutes from this transcript.`;
+
+                const body = {
+                    model: this.elements.model.value,
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: userPrompt }
+                    ],
+                    temperature: 0.1, // Fixed for consistent business meeting minutes
+                    tools: [{
+                        type: "function",
+                        function: {
+                            name: "generate_meeting_minutes",
+                            description: "Generate structured meeting minutes from transcript",
+                            parameters: zodToJsonSchema(MinutesResponseSchema)
+                        }
+                    }],
+                    tool_choice: { type: "function", function: { name: "generate_meeting_minutes" } }
+                };
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.elements.apiKey.value}`
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`API error: ${response.status} - ${errorText}`);
+                }
+
+                const data = await response.json();
+                console.log('API Response:', data);
+                
+                if (data.choices && data.choices[0]) {
+                    const choice = data.choices[0];
+                    
+                    // Handle tool calls (structured output)
+                    if (choice.message && choice.message.tool_calls) {
+                        const toolCall = choice.message.tool_calls[0];
+                        const result = JSON.parse(toolCall.function.arguments);
+                        console.log('Parsed structured response:', result);
+                        return result;
+                    }
+                    
+                    // Handle regular content (fallback)
+                    if (choice.message && choice.message.content) {
+                        console.warn('Received text response instead of structured output');
+                        // Try to parse if it's JSON
+                        try {
+                            return JSON.parse(choice.message.content);
+                        } catch (e) {
+                            console.error('Could not parse response as JSON');
+                        }
+                    }
+                }
+                
+                throw new Error('No structured response received from API');
+            }
+
+            /**
+             * Convert structured minutes to formatted Markdown
+             * Generates professional meeting documentation
+             * Includes all sections with proper formatting
+             * @param {Object} minutes - Structured minutes object
+             * @returns {string} Markdown formatted meeting minutes
+             */
+            formatMinutesToMarkdown(minutes) {
+                console.log('Formatting minutes:', minutes);
+                
+                // Default values if not provided
+                const title = minutes.meeting_title || 'Meeting Minutes';
+                let markdown = `# ${title}\n\n`;
+                markdown += `**Date:** ${this.state.meetingDate || new Date().toLocaleDateString()}\n\n`;
+                
+                // Meeting Goals
+                markdown += `## Meeting Goals and Objectives\n\n`;
+                if (minutes.meeting_goals && Array.isArray(minutes.meeting_goals) && minutes.meeting_goals.length > 0) {
+                    minutes.meeting_goals.forEach((goal, i) => {
+                        const content = typeof goal === 'string' ? goal : (goal.content || '');
+                        if (content) markdown += `${i + 1}. ${content}\n`;
+                    });
+                } else {
+                    markdown += `*No specific goals identified*\n`;
+                }
+                markdown += '\n';
+                
+                // Established Facts
+                markdown += `## Established Facts and Information\n\n`;
+                if (minutes.established_facts && Array.isArray(minutes.established_facts) && minutes.established_facts.length > 0) {
+                    minutes.established_facts.forEach((fact, i) => {
+                        const content = typeof fact === 'string' ? fact : (fact.content || '');
+                        if (content) markdown += `${i + 1}. ${content}\n`;
+                    });
+                } else {
+                    markdown += `*No facts documented*\n`;
+                }
+                markdown += '\n';
+                
+                // Problems
+                markdown += `## Identified Problems and Issues\n\n`;
+                if (minutes.existing_issues && Array.isArray(minutes.existing_issues) && minutes.existing_issues.length > 0) {
+                    minutes.existing_issues.forEach((issue, i) => {
+                        const content = typeof issue === 'string' ? issue : (issue.content || '');
+                        if (content) markdown += `${i + 1}. ${content}\n`;
+                    });
+                } else {
+                    markdown += `*No problems identified*\n`;
+                }
+                markdown += '\n';
+                
+                // Decisions
+                markdown += `## Decisions Made\n\n`;
+                if (minutes.decisions_made && Array.isArray(minutes.decisions_made) && minutes.decisions_made.length > 0) {
+                    minutes.decisions_made.forEach((decision, i) => {
+                        const content = typeof decision === 'string' ? decision : (decision.content || '');
+                        if (content) markdown += `${i + 1}. ${content}\n`;
+                    });
+                } else {
+                    markdown += `*No decisions recorded*\n`;
+                }
+                markdown += '\n';
+                
+                // Action Items
+                markdown += `## Action Items and Tasks\n\n`;
+                if (minutes.tasks_to_execute && Array.isArray(minutes.tasks_to_execute) && minutes.tasks_to_execute.length > 0) {
+                    minutes.tasks_to_execute.forEach((task, i) => {
+                        const content = typeof task === 'string' ? task : (task.content || '');
+                        if (content) markdown += `${i + 1}. ${content}\n`;
+                    });
+                } else {
+                    markdown += `*No action items assigned*\n`;
+                }
+                markdown += '\n';
+                
+                // Q&A
+                markdown += `## Questions and Answers\n\n`;
+                if (minutes.qa_items && minutes.qa_items.length > 0) {
+                    markdown += `| # | Question | Answer |\n`;
+                    markdown += `|---|----------|--------|\n`;
+                    minutes.qa_items.forEach((qa, i) => {
+                        const question = qa.question || 'Question not captured';
+                        const answer = qa.answer || 'Answer not captured';
+                        markdown += `| ${i + 1} | ${question} | ${answer} |\n`;
+                    });
+                } else {
+                    markdown += `*No Q&A recorded*\n`;
+                }
+                markdown += '\n';
+                
+                // Open Questions
+                markdown += `## Open Questions and Unresolved Issues\n\n`;
+                if (minutes.open_questions && Array.isArray(minutes.open_questions) && minutes.open_questions.length > 0) {
+                    minutes.open_questions.forEach((question, i) => {
+                        const content = typeof question === 'string' ? question : (question.content || '');
+                        if (content) markdown += `${i + 1}. ${content}\n`;
+                    });
+                } else {
+                    markdown += `*No open questions*\n`;
+                }
+                markdown += '\n';
+                
+                // Add speaker statistics if available (top 10 with at least 1 minute)
+                if (this.state.speakerStats && this.state.speakerStats.length > 0) {
+                    const filteredStats = this.state.speakerStats
+                        .slice(0, 10)  // Top 10
+                        .filter(stat => stat.durationMinutes >= 1.0);  // At least 1 minute
+                    
+                    if (filteredStats.length > 0) {
+                        markdown += `## Meeting Participation Statistics\n\n`;
+                        markdown += `| Speaker | Speaking Time | Percentage | Words |\n`;
+                        markdown += `|---------|--------------|------------|-------|\n`;
+                        filteredStats.forEach(stat => {
+                            markdown += `| ${stat.speaker} | ${stat.durationMinutes} min | ${stat.percentage}% | ${stat.words} |\n`;
+                        });
+                    }
+                }
+                
+                this.state.rawMinutesMarkdown = markdown;
+                return markdown;
+            }
+
+            displayOutput(markdown) {
+                this.elements.outputCard.classList.remove('d-none');
+                this.elements.markdownOutput.innerHTML = marked.parse(markdown);
+                
+                // Scroll to output
+                this.elements.outputCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            copyMarkdown() {
+                if (!this.state.rawMinutesMarkdown) return;
+                
+                navigator.clipboard.writeText(this.state.rawMinutesMarkdown).then(() => {
+                    this.showToast('Copied to clipboard!', 'success');
+                }).catch(err => {
+                    this.showToast('Failed to copy', 'error');
+                    console.error('Copy error:', err);
+                });
+            }
+
+            clearAll() {
+                // Reset state
+                this.state = {
+                    fileContent: null,
+                    fileName: null,
+                    fileType: null,
+                    speakerStats: {},
+                    processedTranscript: null,
+                    selectedFocus: 'balanced',
+                    meetingDate: null,
+                    rawMinutesMarkdown: ''
+                };
+                
+                // Reset UI
+                this.elements.fileInput.value = '';
+                this.elements.customFocus.value = '';
+                this.elements.preprocessingStatus.classList.remove('active');
+                this.elements.focusSection.classList.add('d-none');
+                this.elements.processButton.classList.add('d-none');
+                this.elements.clearButton.classList.add('d-none');
+                this.elements.speakerStatsCard.classList.add('d-none');
+                this.elements.outputCard.classList.add('d-none');
+                
+                // Reset status icons
+                Object.values(this.statusIcons).forEach(icon => {
+                    icon.classList.remove('complete', 'processing');
+                });
+                
+                document.querySelectorAll('.focus-option').forEach(o => o.classList.remove('selected'));
+            }
+
+            showLoading(show, message = '') {
+                this.elements.loadingOverlay.classList.toggle('d-none', !show);
+                this.elements.loadingDetails.textContent = message;
+            }
+
+            showToast(message, type = 'info') {
+                const toastHtml = `
+                    <div class="toast align-items-center text-bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'primary'} border-0" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">${message}</div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                `;
+                
+                const container = document.getElementById('toast-container');
+                const toastElement = document.createElement('div');
+                toastElement.innerHTML = toastHtml;
+                container.appendChild(toastElement);
+                
+                const toast = new bootstrap.Toast(toastElement.querySelector('.toast'));
+                toast.show();
+                
+                setTimeout(() => {
+                    toastElement.remove();
+                }, 5000);
+            }
+        }
+
+        // Initialize the app when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = new MeetingMinutesApp();
+        });
+    </script>
+</body>
+</html>
