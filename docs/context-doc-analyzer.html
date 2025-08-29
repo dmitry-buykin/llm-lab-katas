@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Context Analyzer - Enhanced Edition</title>
+    <title>Document Context Analyzer</title>
     
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
@@ -931,17 +931,17 @@
                     
                     // Only override if parameter is provided
                     if (apiBase) {
-                        document.getElementById('apiBaseInput').value = decodeURIComponent(apiBase);
+                        document.getElementById('apiBase').value = decodeURIComponent(apiBase);
                         this.log(`Loaded API Base from URL: ${apiBase}`, 'info');
                     }
                     
                     if (apiKey) {
-                        document.getElementById('apiKeyInput').value = decodeURIComponent(apiKey);
+                        document.getElementById('apiKey').value = decodeURIComponent(apiKey);
                         this.log('Loaded API Key from URL', 'info');
                     }
                     
                     if (model) {
-                        document.getElementById('modelInput').value = decodeURIComponent(model);
+                        document.getElementById('model').value = decodeURIComponent(model);
                         this.log(`Loaded Model from URL: ${model}`, 'info');
                     }
                     
@@ -958,7 +958,7 @@
 
             // Check if settings exist and collapse panel
             checkAndCollapseSettings() {
-                const apiKey = localStorage.getItem('aiccApiKey');
+                const apiKey = localStorage.getItem('apiKey');
                 if (apiKey) {
                     document.getElementById('settingsPanel').classList.add('collapsed');
                 }
@@ -991,9 +991,9 @@
 
             // Load settings from localStorage
             loadSettings() {
-                const apiKey = localStorage.getItem('aiccApiKey') || '';
-                const apiBase = localStorage.getItem('aiccApiBase') || 'https://api.openai.com/v1';
-                const model = localStorage.getItem('aiccModel') || 'gpt-4.1-mini';
+                const apiKey = localStorage.getItem('apiKey') || '';
+                const apiBase = localStorage.getItem('apiBase') || 'https://api.openai.com/v1';
+                const model = localStorage.getItem('model') || 'gpt-4.1-mini';
 
                 document.getElementById('apiKey').value = apiKey;
                 document.getElementById('apiBase').value = apiBase;
@@ -1002,9 +1002,9 @@
 
             // Save settings to localStorage
             saveSettings() {
-                localStorage.setItem('aiccApiKey', document.getElementById('apiKey').value);
-                localStorage.setItem('aiccApiBase', document.getElementById('apiBase').value);
-                localStorage.setItem('aiccModel', document.getElementById('model').value);
+                localStorage.setItem('apiKey', document.getElementById('apiKey').value);
+                localStorage.setItem('apiBase', document.getElementById('apiBase').value);
+                localStorage.setItem('model', document.getElementById('model').value);
             },
 
             // Attach event listeners
@@ -1155,6 +1155,31 @@
                 // Try exact match
                 if (haystack.includes(needle)) {
                     return { found: true, exact: true };
+                }
+
+                // For markdown files, try removing markdown syntax from both needle and haystack
+                const stripMarkdown = (text) => {
+                    return text
+                        .replace(/\*\*(.*?)\*\*/g, '$1')  // Remove bold **text**
+                        .replace(/\*(.*?)\*/g, '$1')      // Remove italic *text*
+                        .replace(/__(.*?)__/g, '$1')      // Remove bold __text__
+                        .replace(/_(.*?)_/g, '$1')        // Remove italic _text_
+                        .replace(/`(.*?)`/g, '$1')        // Remove inline code `text`
+                        .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')  // Remove links [text](url)
+                        .replace(/^#{1,6}\s+/gm, '')      // Remove headers
+                        .replace(/^>\s+/gm, '')           // Remove blockquotes
+                        .replace(/^[-*+]\s+/gm, '')       // Remove list markers
+                        .replace(/⚠️|🚨|💨|🏃/g, '')      // Remove emojis
+                        .replace(/\s+/g, ' ')             // Normalize spaces
+                        .trim();
+                };
+
+                // Try match with markdown stripped
+                const needleStripped = stripMarkdown(needle);
+                const haystackStripped = stripMarkdown(haystack);
+                
+                if (haystackStripped.includes(needleStripped)) {
+                    return { found: true, exact: true };  // Consider it exact if markdown-stripped version matches
                 }
 
                 // Try normalized match
